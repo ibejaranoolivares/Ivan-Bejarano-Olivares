@@ -1,0 +1,6 @@
+{
+  "name": "Sisari Travel",
+  "description": "Agencia de turismo en Ayacucho, Perú, con más de 10 años de experiencia ofreciendo paquetes locales, nacionales e internacionales.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
