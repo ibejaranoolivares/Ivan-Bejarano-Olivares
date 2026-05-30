@@ -63,49 +63,57 @@ export default function BlogView({ blogPosts, language, onBack, scrollToId, onSe
   };
 
   return (
-    <div className="bg-[#fbfaf8] py-8 px-4 sm:px-6 lg:px-8 border-t border-brand-pink/5 min-h-[70vh]">
-      <div className="max-w-7xl mx-auto">
-        <AnimatePresence mode="wait">
-          {!activePost ? (
-            /* BLOG INDEX LIST VIEW */
-            <motion.div
-              key="list-view"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25 }}
-              className="space-y-12"
-            >
-              {/* Top Navigation Row */}
-              <div className="flex items-center justify-between">
+    <div className="bg-[#fbfaf8] min-h-[70vh] pb-16">
+      <AnimatePresence mode="wait">
+        {!activePost ? (
+          /* BLOG INDEX LIST VIEW */
+          <motion.div
+            key="list-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-12 text-left"
+          >
+            {/* Tall Immersive Cover Section (Single-slide title presentation with background image matching other views) */}
+            <div className="relative h-[480px] w-full flex items-center justify-center overflow-hidden bg-brand-charcoal select-none">
+              <div className="absolute inset-0 z-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&auto=format&fit=crop&q=80" 
+                  alt={isEs ? "Diario de Viaje" : "Travel Journal"}
+                  className="w-full h-full object-cover opacity-35 animate-pulse"
+                  style={{ animationDuration: "16s" }}
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#fbfaf8] via-black/45 to-black/25 z-10" />
+              </div>
+
+              <div className="relative z-20 max-w-4xl mx-auto text-center px-4 space-y-6">
                 <button
                   onClick={onBack}
-                  className="flex items-center gap-2 text-xs font-bold text-brand-charcoal hover:text-brand-pink transition-colors group cursor-pointer"
+                  className="inline-flex items-center gap-2 text-xs font-bold text-white bg-black/45 backdrop-blur-md px-4 py-2 rounded-full hover:bg-brand-pink transition-all group cursor-pointer mb-2"
                 >
-                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                   <span>{isEs ? "Volver al Inicio" : "Back to Home"}</span>
                 </button>
-                
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#e12d8a] bg-brand-pink/5 px-3 py-1 rounded-full">
-                  {isEs ? "Publicaciones de Ceci" : "Ceci Publications"}
-                </span>
-              </div>
 
-              {/* Title & Banner intro */}
-              <div className="text-center max-w-2xl mx-auto space-y-3">
-                <span className="text-brand-pink font-bold font-mono tracking-widest text-[11px] uppercase block">
+                <span className="text-brand-orange text-xs sm:text-sm font-bold uppercase tracking-[0.3em] font-mono block">
                   {isEs ? "NOTICIAS, CONSEJOS Y BITÁCORAS" : "NEWS, TRAVEL TIPS & CHRONICLES"}
                 </span>
-                <h1 className="font-display font-black text-3xl sm:text-4xl text-[#2c2c2c] tracking-tight">
-                  {isEs ? "Ceci Blog: Inspírate a Descubrir" : "Ceci Blog: Inspire Your Wanderlust"}
+                
+                <h1 className="font-display font-black text-4xl sm:text-5xl md:text-6xl text-white tracking-tight leading-none drop-shadow-md">
+                  {isEs ? "Blog y Noticias" : "Latest Blog & News"}
                 </h1>
-                <p className="text-xs sm:text-sm text-brand-charcoal/70 font-light leading-relaxed">
+                
+                <p className="text-gray-100 font-light text-base sm:text-lg max-w-2xl mx-auto leading-relaxed drop-shadow-sm">
                   {isEs 
-                    ? "Explora guías detalladas redactadas por nuestros expertos, noticias de festividades puneñas o ayacuchanas, y consejos de senderismo ético."
-                    : "Track curated guidelines compiled by our leading wilderness experts, regional traditional festivity dates, and sustainable traveling advice."}
+                    ? "Consejos de viaje, guías gastronómicas y relatos directos de nuestros guías locales para inspirar tu siguiente aventura."
+                    : "Expert travel tips, culinary secrets, and destination guides directly from our local curators."}
                 </p>
               </div>
+            </div>
 
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
               {/* Search & Category filter panel card */}
               <div className="bg-white border border-brand-pink/10 rounded-2xl p-4 sm:p-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-sm">
                 
@@ -143,7 +151,10 @@ export default function BlogView({ blogPosts, language, onBack, scrollToId, onSe
               {/* Blog Grid rendering */}
               {filteredPosts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredPosts.map((post) => {
+                  {[...filteredPosts]
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 12)
+                    .map((post) => {
                     const title = isEs ? post.titleEs : post.titleEn;
                     const subtitle = isEs ? post.subtitleEs : post.subtitleEn;
                     const readTime = isEs ? post.readTimeEs : post.readTimeEn;
@@ -214,8 +225,9 @@ export default function BlogView({ blogPosts, language, onBack, scrollToId, onSe
                 </div>
               )}
 
-            </motion.div>
-          ) : (
+            </div>
+          </motion.div>
+        ) : (
             /* DETAILED BLOG ARTICLE VIEW */
             <motion.div
               key="detail-view"
@@ -404,6 +416,5 @@ export default function BlogView({ blogPosts, language, onBack, scrollToId, onSe
           )}
         </AnimatePresence>
       </div>
-    </div>
   );
 }

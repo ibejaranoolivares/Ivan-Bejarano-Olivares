@@ -120,13 +120,14 @@ export default function LegalView({
     // Create lead entry
     const newLead: CRMLead = {
       id: "lead-" + Date.now(),
+      source: "Formulario de Reserva",
       name: complaintForm.fullName,
       email: complaintForm.email,
       phone: complaintForm.phone,
-      interest: `LIBRO RECLAMACIONES (${complaintForm.claimType}): ${ticketId}`,
-      message: `${complaintForm.documentType} N° ${complaintForm.documentNumber}.\nDirección: ${complaintForm.address}.\n\nMonto reclamado: S/ ${complaintForm.amountClaimed || "0.00"}.\n\nDescripción del hecho:\n${complaintForm.description}\n\nPedido del cliente:\n${complaintForm.resolutionRequested}`,
-      date: new Date().toLocaleDateString("es-PE"),
-      status: "Pendiente"
+      destination: `RECLAMO: ${complaintForm.claimType}`,
+      comments: `${complaintForm.documentType} N° ${complaintForm.documentNumber}.\nDirección: ${complaintForm.address}.\nTens-Id: ${ticketId}.\nMonto reclamado: S/ ${complaintForm.amountClaimed || "0.00"}.\n\nDescripción del hecho:\n${complaintForm.description}\n\nPedido del cliente:\n${complaintForm.resolutionRequested}`,
+      dateCreated: new Date().toLocaleDateString("es-PE"),
+      status: "Nuevo"
     };
 
     onAddCRMLead(newLead);

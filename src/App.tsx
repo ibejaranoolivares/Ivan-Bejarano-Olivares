@@ -31,7 +31,8 @@ import {
   Instagram,
   Linkedin,
   Youtube,
-  Globe
+  Globe,
+  Users
 } from "lucide-react";
 import { PACKAGES, TESTIMONIALS, BRAND_COLORS } from "./data";
 import { DestinationPackage, TravelItinerary, ContactFormData, BlogPost, CMSContent, BotConfig, CRMLead } from "./types";
@@ -42,6 +43,9 @@ import ZoneCatalogPage from "./components/ZoneCatalogPage";
 import NosotrosView from "./components/NosotrosView";
 import BlogView from "./components/BlogView";
 import LegalView from "./components/LegalView";
+import { getTranslatedPackage } from "./utils/translator";
+import ContactoView from "./components/ContactoView";
+import VisualBuilder from "./components/VisualBuilder";
 import { TRANSLATIONS } from "./translations";
 
 function TiktokIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -130,7 +134,7 @@ export default function App() {
   });
 
   // Main custom view page state
-  const [currentView, setCurrentView] = useState<"home" | "nosotros" | "blog" | "privacy" | "terms" | "cookies" | "notice" | "complaints">("home");
+  const [currentView, setCurrentView] = useState<"home" | "nosotros" | "blog" | "contacto" | "privacy" | "terms" | "cookies" | "notice" | "complaints" | "builder">("home");
 
   const [botConfig, setBotConfig] = useState<BotConfig>(() => {
     try {
@@ -179,6 +183,10 @@ export default function App() {
 
   // Multilanguage and interactive state hooks
   const [language, setLanguage] = useState<"es" | "en">("es");
+
+  const translatedPackages = React.useMemo(() => {
+    return packages.map(pkg => getTranslatedPackage(pkg, language));
+  }, [packages, language]);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Floating WhatsApp bot popup states
@@ -291,47 +299,38 @@ export default function App() {
     }, 850);
   };
 
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    return localStorage.getItem("sisari_admin_logged") === "true";
+  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [pendingAdminAction, setPendingAdminAction] = useState<"console" | "builder" | "">("");
+
+  const [adminPasscode, setAdminPasscode] = useState<string>(() => {
+    const saved = localStorage.getItem("sisari_admin_passcode");
+    if (!saved) {
+      localStorage.setItem("sisari_admin_passcode", "SisariTravel*2026");
+      return "SisariTravel*2026";
+    }
+    return saved;
+  });
+  const [showRecoveryForm, setShowRecoveryForm] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [newAdminPasswordVal, setNewAdminPasswordVal] = useState("");
+  const [recoverySuccessMessage, setRecoverySuccessMessage] = useState("");
+
   const [isAdminConsoleOpen, setIsAdminConsoleOpen] = useState(false);
   const [showAllInCatalog, setShowAllInCatalog] = useState(false);
 
-  const slides = React.useMemo(() => [
-    {
-      id: "slide-millpu",
-      titleEs: "Aguas Turquesas de Millpu",
-      titleEn: "Turquoise Waters of Millpu",
-      descEs: "La deslumbrante joya de Ayacucho. Camina entre cañones de piedra caliza blanca y descubre pozas de agua turquesa de ensueño.",
-      descEn: "The dazzling jewel of Ayacucho. Walk among white limestone canyons and discover dreamy turquoise-green pools.",
-      image: "/src/assets/images/sisari_millpu_hero_1779988973258.png",
-      locationEs: "Ayacucho, Perú",
-      locationEn: "Ayacucho, Peru",
-      tagEs: "JOYA LOCAL",
-      tagEn: "LOCAL GEM"
-    },
-    {
-      id: "slide-machupicchu",
-      titleEs: "Santuario de Machu Picchu",
-      titleEn: "Machu Picchu Sanctuary",
-      descEs: "Explora la mística ciudadela de Cusco, una de las maravillas del mundo moderno, rodeada de fascinantes nubes andinas.",
-      descEn: "Explore the mystical Inca citadel of Cusco, one of the modern wonders of the world, surrounded by highland clouds.",
-      image: "/src/assets/images/sisari_machupicchu_1779988993493.png",
-      locationEs: "Cusco, Perú",
-      locationEn: "Cusco, Peru",
-      tagEs: "MARAVILLA MUNDIAL",
-      tagEn: "WORLD WONDER"
-    },
-    {
-      id: "slide-mexico",
-      titleEs: "Pirámides de Teotihuacán",
-      titleEn: "Teotihuacan Pyramids",
-      descEs: "Conéctate con el esplendor azteca en la colosal Ciudad de los Dioses. Admira las colosales Pirámides del Sol y de la Luna.",
-      descEn: "Tune in with the pre-Columbian grandeur of Mexico. Admire the colossal Pyramids of the Sun and the Moon.",
-      image: "https://images.unsplash.com/photo-1518638150341-f81217277b0d?w=1200&auto=format&fit=crop&q=80",
-      locationEs: "Teotihuacán, México",
-      locationEn: "Teotihuacan, Mexico",
-      tagEs: "HERENCIA HISTÓRICA",
-      tagEn: "HISTORIC HERITAGE"
-    }
-  ], []);
+  const slides = React.useMemo(() => {
+    return cmsContent.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [];
+  }, [cmsContent.heroSlides]);
+
+  const formattedWhatsAppNumber = React.useMemo(() => {
+    const raw = cmsContent.whatsappNumber || "+51980535383";
+    return raw.replace(/\D/g, "");
+  }, [cmsContent.whatsappNumber]);
 
   // Carousel automatic transition timer
   useEffect(() => {
@@ -373,6 +372,13 @@ export default function App() {
   const [itineraryError, setItineraryError] = useState<string | null>(null);
   const [expandedDay, setExpandedDay] = useState<number | null>(1);
 
+  // AI custom dynamic shipper states
+  const [iaClientName, setIaClientName] = useState("");
+  const [iaClientEmail, setIaClientEmail] = useState("");
+  const [iaClientPhone, setIaClientPhone] = useState("");
+  const [isSendingAIShip, setIsSendingAIShip] = useState(false);
+  const [iaLeadSubmitted, setIaLeadSubmitted] = useState(false);
+
   // Booking Form State
   const [bookingForm, setBookingForm] = useState<ContactFormData>({
     name: "",
@@ -398,12 +404,12 @@ export default function App() {
   const getFilteredPackages = () => {
     if (activeTab === "all") {
       // En la página de inicio habrá tres de cada uno por categoría (3 locales, 3 nacionales y 3 internacionales)
-      const locals = packages.filter((p) => p.category === "local").slice(0, 3);
-      const nationals = packages.filter((p) => p.category === "national").slice(0, 3);
-      const internationals = packages.filter((p) => p.category === "international").slice(0, 3);
+      const locals = translatedPackages.filter((p) => p.category === "local").slice(0, 3);
+      const nationals = translatedPackages.filter((p) => p.category === "national").slice(0, 3);
+      const internationals = translatedPackages.filter((p) => p.category === "international").slice(0, 3);
       return [...locals, ...nationals, ...internationals];
     }
-    return packages.filter((pkg) => pkg.category === activeTab);
+    return translatedPackages.filter((pkg) => pkg.category === activeTab);
   };
 
   const filteredPackages = getFilteredPackages();
@@ -425,6 +431,7 @@ export default function App() {
     setPlanningStep(0);
     setItineraryResult(null);
     setItineraryError(null);
+    setIaLeadSubmitted(false);
 
     // Dynamic fake progress steps for sensory polish
     const stepInterval = setInterval(() => {
@@ -481,6 +488,59 @@ export default function App() {
       setItineraryError(err.message || "Error al conectar con el servidor de Inteligencia Artificial.");
     } finally {
       setIsPlanning(false);
+    }
+  };
+
+  // Send AI itinerary details directly via email dispatch
+  const handleSendAIShipping = async () => {
+    if (!iaClientName.trim() || !iaClientEmail.trim() || !iaClientPhone.trim()) {
+      alert(language === "es" ? "Por favor complete todos los campos requeridos." : "Please fill in all requested fields.");
+      return;
+    }
+    
+    setIsSendingAIShip(true);
+    try {
+      const response = await fetch("/api/send-email-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: iaClientName,
+          email: iaClientEmail,
+          phone: iaClientPhone,
+          destination: itineraryResult?.destination,
+          overview: itineraryResult?.overview,
+          days: itineraryResult?.days,
+          packing: itineraryResult?.packingSuggestions,
+          ownerEmail: cmsContent.destinationFormEmail || "reservas@sisaritravel.pe"
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo procesar la entrega de correo.");
+      }
+
+      // Add a polished lead to CRM Leads in real-time
+      const realLead: CRMLead = {
+        id: "lead_ai_" + Date.now().toString().slice(-6),
+        source: "Planificador de Itinerario por IA",
+        name: iaClientName,
+        phone: iaClientPhone,
+        email: iaClientEmail,
+        dateCreated: new Date().toISOString().split("T")[0],
+        destination: itineraryResult?.destination || aiDestination,
+        travelDate: `${aiDuration} Días`,
+        comments: `Estilo: "${aiStyle}", Viajeros: "${aiTravelers}". Cliente solicitó entrega formal por Correo Directo.`,
+        status: "Nuevo",
+        notes: `Itinerario enviado a ${iaClientEmail}. Registrado en base de clientes Sisari.`
+      };
+
+      setCrmLeads((prev) => [realLead, ...prev]);
+      setIaLeadSubmitted(true);
+    } catch (error) {
+      console.error("Error shipping AI email:", error);
+      alert(language === "es" ? "Error al registrar sus datos de contacto." : "Error saving contact details.");
+    } finally {
+      setIsSendingAIShip(false);
     }
   };
 
@@ -553,6 +613,11 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+    if (id === "contacto") {
+      setCurrentView("contacto");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     if (["privacy", "terms", "cookies", "notice", "complaints"].includes(id)) {
       setCurrentView(id as any);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -608,10 +673,42 @@ export default function App() {
         <div className="bg-[#1e1e1e] text-[#e0e0e0] text-[10px] sm:text-xs py-2 border-b border-white/5 select-none font-sans">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
             
-            {/* Left: Contact Phone */}
-            <div className="flex items-center gap-2 font-semibold font-mono text-[#ffffff]">
-              <Phone className="w-3.5 h-3.5 text-brand-pink fill-brand-pink shrink-0 animate-pulse" />
-              <span>{cmsContent.phones?.[0] || "+51 987 654 321"}</span>
+            {/* Left: Contact Phone, Email, and Address */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-semibold font-mono text-white text-xs">
+              <a 
+                href={`tel:${(cmsContent.phones?.[0] || "+51 987 654 321").replace(/\s+/g, '')}`} 
+                className="hover:text-brand-pink transition-colors flex items-center gap-1.5 cursor-pointer"
+                title="Marcar Teléfono"
+              >
+                <Phone className="w-3.5 h-3.5 text-brand-pink fill-brand-pink shrink-0" />
+                <span>{cmsContent.phones?.[0] || "+51 987 654 321"}</span>
+              </a>
+
+              <span className="text-white/20 hidden md:inline">|</span>
+
+              <a 
+                href={`mailto:${cmsContent.emails?.[0] || "reservas@sisaritravel.pe"}`} 
+                className="hover:text-brand-orange transition-colors flex items-center gap-1.5 cursor-pointer text-[11px] sm:text-xs"
+                title="Buzón de Reservas"
+              >
+                <Mail className="w-3.5 h-3.5 text-brand-orange shrink-0" />
+                <span>{cmsContent.emails?.[0] || "reservas@sisaritravel.pe"}</span>
+              </a>
+
+              <span className="text-white/20 hidden lg:inline">|</span>
+
+              <a 
+                href={cmsContent.addressMapUrl || "https://maps.google.com/?q=Jiron+Lima+140,+Ayacucho,+Peru"} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:text-[#f81585] transition-colors flex items-center gap-1.5 cursor-pointer hidden sm:flex text-[11px] sm:text-xs"
+                title="Abrir Google Maps"
+              >
+                <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span className="line-clamp-1 max-w-[150px] md:max-w-[280px]">
+                  {language === "es" ? (cmsContent.addressEs || "Jirón Lima 140, 1ra Cuadra") : (cmsContent.addressEn || "140 Jiron Lima, 1st Block")}
+                </span>
+              </a>
             </div>
 
             {/* Right: Socials, Language Selector, Admin Console button */}
@@ -624,7 +721,7 @@ export default function App() {
                 <a href={cmsContent.socialLinks?.instagram || "https://instagram.com"} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full text-[#b3b3b3] hover:text-[#f81585] hover:bg-white/5 transition-all" title="Instagram">
                   <Instagram className="w-3.5 h-3.5" />
                 </a>
-                <a href={cmsContent.socialLinks?.facebook || "https://tiktok.com"} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full text-[#b3b3b3] hover:text-[#f81585] hover:bg-white/5 transition-all" title="TikTok">
+                <a href={cmsContent.socialLinks?.tiktok || "https://tiktok.com"} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full text-[#b3b3b3] hover:text-[#f81585] hover:bg-white/5 transition-all" title="TikTok">
                   <TiktokIcon className="w-3.5 h-3.5" />
                 </a>
                 <a href={cmsContent.socialLinks?.youtube || "https://youtube.com"} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full text-[#b3b3b3] hover:text-[#f81585] hover:bg-white/5 transition-all" title="YouTube">
@@ -650,16 +747,56 @@ export default function App() {
                   <span>{language === "es" ? "EN" : "ES"}</span>
                 </button>
 
+                {/* Visual Page Builder Button - Visible only to authentic admin */}
+                {isAdmin && (
+                  <button 
+                    type="button"
+                    onClick={() => setCurrentView("builder")}
+                    className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#e12d8a] text-white hover:bg-neutral-700 font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-sm shadow-black/20"
+                    title="Constructor Visual Divi / Elementor"
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-yellow-300 animate-pulse fill-yellow-300" />
+                    <span>CONSTRUCTOR VISUAL</span>
+                  </button>
+                )}
+
                 {/* Admin Console panel button */}
                 <button 
                   type="button"
-                  onClick={() => setIsAdminConsoleOpen(true)}
+                  onClick={() => {
+                    if (isAdmin) {
+                      setIsAdminConsoleOpen(true);
+                    } else {
+                      setPendingAdminAction("console");
+                      setIsLoginModalOpen(true);
+                    }
+                  }}
                   className="flex items-center gap-1 px-3 py-1 rounded-full bg-brand-orange text-white hover:bg-brand-orange/90 font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-sm shadow-black/20"
                   title="Consola de Administración - Sisari Travel"
                 >
                   <Sliders className="w-2.5 h-2.5" />
-                  <span>{t.consolaAdmin.replace("Consola ", "")}</span>
+                  <span>{isAdmin ? t.consolaAdmin.replace("Consola ", "") : (language === "es" ? "Acceso Admin" : "Admin Access")}</span>
                 </button>
+
+                {/* Admin Logout button */}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAdmin(false);
+                      localStorage.setItem("sisari_admin_logged", "false");
+                      setIsAdminConsoleOpen(false);
+                      if (currentView === "builder") {
+                        setCurrentView("home");
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-600/95 text-white hover:bg-red-700 text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                    title="Cerrar sesión de Administrador"
+                  >
+                    <X className="w-2.5 h-2.5 mt-0.5" />
+                    <span>Salir</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -672,127 +809,147 @@ export default function App() {
           {/* Brand Logo and Text combined */}
           <div 
             className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => scrollToId("inicio")}
+            onClick={() => {
+              if (currentView !== "home") {
+                setCurrentView("home");
+                setTimeout(() => scrollToId("inicio"), 150);
+              } else {
+                scrollToId("inicio");
+              }
+            }}
           >
-            <SisariLogoSVG className="w-12 h-12 group-hover:rotate-12 transition-transform duration-300" />
-            <div className="flex flex-col">
-              <span className="font-display font-extrabold text-[22px] tracking-widest text-[#2c2c2c] leading-none logo-text-spacing">
-                SISARI
-              </span>
-              <span className="text-[10px] font-medium tracking-[0.25em] text-[#e12d8a] leading-tight flex items-center gap-1 mt-0.5">
-                TRAVEL <span className="text-[#f58220] font-bold">PERÚ</span>
-              </span>
-            </div>
+            <img
+              src={cmsContent.logoImage || "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=200&q=80"}
+              alt="Sisari Travel Logo"
+              referrerPolicy="no-referrer"
+              className="h-12 w-auto max-w-[180px] object-contain group-hover:scale-105 transition-transform duration-300"
+            />
           </div>
 
-          {/* Nav Destinations and Services */}
+          {/* Nav Destinations and Services (Dynamically rendered from CMS) */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8 font-semibold text-sm text-brand-charcoal/85 animate-fade-in">
-            <button onClick={() => scrollToId("inicio")} className="hover:text-brand-pink transition-colors cursor-pointer">{t.inicio}</button>
-            <button onClick={() => scrollToId("nosotros")} className="hover:text-brand-pink transition-colors cursor-pointer">{t.nosotros}</button>
-            
-            {/* Paquetes Dropdown Menu */}
-            <div 
-              className="relative"
-              onMouseEnter={() => setIsNavDropdownOpen(true)}
-              onMouseLeave={() => setIsNavDropdownOpen(false)}
-            >
-              <button 
-                onClick={() => {
-                  scrollToId("paquetes");
-                  setIsNavDropdownOpen(!isNavDropdownOpen);
-                }} 
-                className="hover:text-brand-pink transition-colors cursor-pointer flex items-center gap-1 py-1"
-              >
-                <span>{t.paquetes}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isNavDropdownOpen ? "rotate-180" : ""}`} />
-              </button>
+            {(cmsContent.menuItems || DEFAULT_CMS_CONTENT.menuItems).map((item) => {
+              const label = language === "es" ? item.labelEs : item.labelEn;
+              const isSelected = currentView === item.target;
               
-              <AnimatePresence>
-                {isNavDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-brand-pink/10 py-3 z-50 flex flex-col gap-1 text-xs text-left"
+              if (item.target === "paquetes") {
+                // Render the packages dropdown!
+                return (
+                  <div 
+                    key={item.id}
+                    className="relative"
+                    onMouseEnter={() => setIsNavDropdownOpen(true)}
+                    onMouseLeave={() => setIsNavDropdownOpen(false)}
                   >
-                    <div className="px-4 py-1.5 border-b border-brand-pink/5 text-[10px] font-mono tracking-widest text-[#e12d8a] uppercase font-bold text-center">
-                      {t.catalogoTuristico}
-                    </div>
-                    <button
-                      type="button"
+                    <button 
                       onClick={() => {
-                        setSelectedZonePage(null);
-                        setSelectedPackage(null);
-                        scrollToId("paquetes");
-                        setIsNavDropdownOpen(false);
-                      }}
-                      className={`px-4 py-2.5 text-left hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer ${
-                        selectedZonePage === null ? "bg-brand-pink/5 text-brand-pink font-semibold" : "text-brand-charcoal"
-                      }`}
+                        if (currentView !== "home") {
+                          setCurrentView("home");
+                          setTimeout(() => scrollToId("paquetes"), 150);
+                        } else {
+                          scrollToId("paquetes");
+                        }
+                        setIsNavDropdownOpen(!isNavDropdownOpen);
+                      }} 
+                      className="hover:text-brand-pink transition-colors cursor-pointer flex items-center gap-1 py-1"
                     >
-                      <span className="text-xs font-semibold">🌟 {t.destacadosInicio}</span>
-                      <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">{t.solo3Destacados}</span>
+                      <span>{label}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isNavDropdownOpen ? "rotate-180" : ""}`} />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedZonePage("local");
-                        setSelectedPackage(null);
-                        setIsNavDropdownOpen(false);
-                      }}
-                      className={`px-4 py-2.5 text-left hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer ${
-                        selectedZonePage === "local" ? "bg-brand-pink/5 text-brand-pink font-semibold" : "text-brand-charcoal"
-                      }`}
-                    >
-                      <span className="text-xs font-semibold">🏝️ {t.paquetesLocales}</span>
-                      <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">{t.verCatalogoLocal}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedZonePage("national");
-                        setSelectedPackage(null);
-                        setIsNavDropdownOpen(false);
-                      }}
-                      className={`px-4 py-2.5 text-left hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer ${
-                        selectedZonePage === "national" ? "bg-brand-pink/5 text-brand-pink font-semibold" : "text-brand-charcoal"
-                      }`}
-                    >
-                      <span className="text-xs font-semibold">⛰️ {t.paquetesNacionales}</span>
-                      <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">{t.verDestinosCostaSierra}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedZonePage("international");
-                        setSelectedPackage(null);
-                        setIsNavDropdownOpen(false);
-                      }}
-                      className={`px-4 py-2.5 text-left hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer ${
-                        selectedZonePage === "international" ? "bg-brand-pink/5 text-brand-pink font-semibold" : "text-brand-charcoal"
-                      }`}
-                    >
-                      <span className="text-xs font-semibold">✈️ {t.paquetesInternacionales}</span>
-                      <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">{t.verViajesExclusivos}</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    
+                    <AnimatePresence>
+                      {isNavDropdownOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-brand-pink/10 py-3 z-50 flex flex-col gap-1 text-xs text-left"
+                        >
+                          <div className="px-4 py-1.5 border-b border-brand-pink/5 text-[10px] font-mono tracking-widest text-[#e12d8a] uppercase font-bold text-center">
+                            {t.catalogoTuristico}
+                          </div>
+                          {(cmsContent.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || []).map((secItem) => {
+                            const secLabel = language === "es" ? secItem.labelEs : secItem.labelEn;
+                            const secSelected = selectedZonePage === secItem.target;
+                            
+                            return (
+                              <button
+                                key={secItem.id}
+                                type="button"
+                                onClick={() => {
+                                  if (secItem.type === "custom_page") {
+                                    setCurrentView(secItem.target);
+                                  } else {
+                                    setSelectedZonePage(secItem.target as any);
+                                    setSelectedPackage(null);
+                                    if (currentView !== "home") {
+                                      setCurrentView("home");
+                                      setTimeout(() => scrollToId("paquetes"), 150);
+                                    } else {
+                                      scrollToId("paquetes");
+                                    }
+                                  }
+                                  setIsNavDropdownOpen(false);
+                                }}
+                                className={`px-4 py-2.5 text-left hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer ${
+                                  secSelected ? "bg-brand-pink/5 text-brand-pink font-semibold" : "text-brand-charcoal"
+                                }`}
+                              >
+                                <span className="text-xs font-semibold">{secLabel}</span>
+                                <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">
+                                  {language === "es" 
+                                    ? `Ver catálogo de ${secLabel}`
+                                    : `View ${secLabel} travel gallery`}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
 
-            <button onClick={() => scrollToId("blog")} className="hover:text-brand-pink transition-colors cursor-pointer">
-              {language === "es" ? "Blog y Noticias" : "Blog & News"}
-            </button>
-            <button onClick={() => scrollToId("contacto")} className="hover:text-brand-pink transition-colors cursor-pointer">
-              {language === "es" ? "Contacto" : "Contact"}
-            </button>
+              // Render regular section scroll or custom sub-route
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.type === "section") {
+                      if (currentView !== "home") {
+                        setCurrentView("home");
+                        setTimeout(() => scrollToId(item.target), 150);
+                      } else {
+                        scrollToId(item.target);
+                      }
+                    } else {
+                      setCurrentView(item.target);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                  }}
+                  className={`hover:text-brand-pink transition-colors cursor-pointer ${
+                    isSelected ? "text-brand-pink font-extrabold" : ""
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </nav>
 
           {/* Booking CTA button in Primary Nav */}
           <div className="hidden md:flex items-center gap-4">
             <button 
-              onClick={() => scrollToId("contacto")}
+              onClick={() => {
+                if (currentView !== "home") {
+                  setCurrentView("home");
+                  setTimeout(() => scrollToId("contacto"), 150);
+                } else {
+                  scrollToId("contacto");
+                }
+              }}
               className="bg-brand-pink hover:bg-brand-pink/95 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-full shadow-md transition-all cursor-pointer"
             >
               {t.reservarAhora}
@@ -813,101 +970,95 @@ export default function App() {
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="md:hidden border-t border-brand-pink/10 bg-[#fbfaf8] overflow-hidden"
+               initial={{ height: 0, opacity: 0 }}
+               animate={{ height: "auto", opacity: 1 }}
+               exit={{ height: 0, opacity: 0 }}
+               className="md:hidden border-t border-brand-pink/10 bg-[#fbfaf8] overflow-hidden"
             >
               <div className="px-4 pt-2 pb-6 flex flex-col gap-4 text-base font-semibold">
-                <button onClick={() => scrollToId("inicio")} className="text-left py-2 hover:text-brand-pink border-b border-brand-pink/5">{t.inicio}</button>
-                <button onClick={() => scrollToId("nosotros")} className="text-left py-2 hover:text-brand-pink border-b border-brand-pink/5">{t.nosotros}</button>
-                
-                {/* Collapsible Mobile Dropdown for Paquetes */}
-                <div className="border-b border-brand-pink/5 py-1">
-                  <button 
-                    onClick={() => setIsMobileNavDropdownOpen(!isMobileNavDropdownOpen)} 
-                    className="w-full flex items-center justify-between text-left py-1 hover:text-brand-pink cursor-pointer"
-                  >
-                    <span className="text-base font-semibold">{t.paquetes}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileNavDropdownOpen ? "rotate-180 text-brand-pink" : "text-neutral-500"}`} />
-                  </button>
-                  <AnimatePresence>
-                    {isMobileNavDropdownOpen && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="pl-4 mt-2 flex flex-col gap-2.5 overflow-hidden"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedZonePage(null);
-                            setSelectedPackage(null);
-                            scrollToId("paquetes");
-                            setMobileMenuOpen(false);
-                            setIsMobileNavDropdownOpen(false);
-                          }}
-                          className={`text-left py-1.5 flex items-center gap-1.5 cursor-pointer ${
-                            selectedZonePage === null ? "text-brand-pink font-extrabold" : "text-brand-charcoal/80 font-normal"
-                          }`}
+                {(cmsContent.menuItems || DEFAULT_CMS_CONTENT.menuItems).map((item) => {
+                  const label = language === "es" ? item.labelEs : item.labelEn;
+                  
+                  if (item.target === "paquetes") {
+                    return (
+                      <div key={item.id} className="border-b border-brand-pink/5 py-1 text-left">
+                        <button 
+                          onClick={() => setIsMobileNavDropdownOpen(!isMobileNavDropdownOpen)} 
+                          className="w-full flex items-center justify-between text-left py-1 hover:text-brand-pink cursor-pointer"
                         >
-                          <span className="text-xs">🌟 {t.destacadosInicio}</span>
+                          <span className="text-base font-semibold">{label}</span>
+                          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileNavDropdownOpen ? "rotate-180 text-brand-pink" : "text-neutral-500"}`} />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedZonePage("local");
-                            setSelectedPackage(null);
-                            setMobileMenuOpen(false);
-                            setIsMobileNavDropdownOpen(false);
-                          }}
-                          className={`text-left py-1.5 flex items-center gap-1.5 cursor-pointer ${
-                            selectedZonePage === "local" ? "text-brand-pink font-extrabold" : "text-brand-charcoal/80 font-normal"
-                          }`}
-                        >
-                          <span className="text-xs">🏝️ {t.paquetesLocales}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedZonePage("national");
-                            setSelectedPackage(null);
-                            setMobileMenuOpen(false);
-                            setIsMobileNavDropdownOpen(false);
-                          }}
-                          className={`text-left py-1.5 flex items-center gap-1.5 cursor-pointer ${
-                            selectedZonePage === "national" ? "text-brand-pink font-extrabold" : "text-brand-charcoal/80 font-normal"
-                          }`}
-                        >
-                          <span className="text-xs">⛰️ {t.paquetesNacionales}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedZonePage("international");
-                            setSelectedPackage(null);
-                            setMobileMenuOpen(false);
-                            setIsMobileNavDropdownOpen(false);
-                          }}
-                          className={`text-left py-1.5 flex items-center gap-1.5 cursor-pointer ${
-                            selectedZonePage === "international" ? "text-brand-pink font-extrabold" : "text-brand-charcoal/80 font-normal"
-                          }`}
-                        >
-                          <span className="text-xs">✈️ {t.paquetesInternacionales}</span>
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                        <AnimatePresence>
+                          {isMobileNavDropdownOpen && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="pl-4 mt-2 flex flex-col gap-2.5 overflow-hidden text-left"
+                            >
+                              {(cmsContent.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || []).map((secItem) => {
+                                const secLabel = language === "es" ? secItem.labelEs : secItem.labelEn;
+                                const secSelected = selectedZonePage === secItem.target;
+                                
+                                return (
+                                  <button
+                                    key={secItem.id}
+                                    type="button"
+                                    onClick={() => {
+                                      if (secItem.type === "custom_page") {
+                                        setCurrentView(secItem.target);
+                                      } else {
+                                        setSelectedZonePage(secItem.target as any);
+                                        setSelectedPackage(null);
+                                        if (currentView !== "home") {
+                                          setCurrentView("home");
+                                          setTimeout(() => scrollToId("paquetes"), 150);
+                                        } else {
+                                          scrollToId("paquetes");
+                                        }
+                                      }
+                                      setMobileMenuOpen(false);
+                                      setIsMobileNavDropdownOpen(false);
+                                    }}
+                                    className={`text-left py-1.5 flex items-center gap-1.5 cursor-pointer ${
+                                      secSelected ? "text-brand-pink font-extrabold" : "text-brand-charcoal/80 font-normal"
+                                    }`}
+                                  >
+                                    <span className="text-xs">{secLabel}</span>
+                                  </button>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
 
-                <button onClick={() => scrollToId("blog")} className="text-left py-2 hover:text-brand-pink border-b border-brand-pink/5">
-                  {language === "es" ? "Blog y Noticias" : "Blog & News"}
-                </button>
-
-                <button onClick={() => scrollToId("contacto")} className="text-left py-2 hover:text-brand-pink border-b border-brand-pink/5">
-                  {language === "es" ? "Contacto" : "Contact"}
-                </button>
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        if (item.type === "section") {
+                          if (currentView !== "home") {
+                            setCurrentView("home");
+                            setTimeout(() => scrollToId(item.target), 150);
+                          } else {
+                            scrollToId(item.target);
+                          }
+                        } else {
+                          setCurrentView(item.target);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }
+                      }}
+                      className="text-left py-2 hover:text-brand-pink border-b border-brand-pink/5 cursor-pointer"
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
 
                 <div className="flex flex-wrap gap-2 pt-2">
                   <button 
@@ -962,7 +1113,7 @@ export default function App() {
       <AnimatePresence mode="wait">
         {selectedPackage ? (
           <PackageLandingPage 
-            pkg={selectedPackage} 
+            pkg={getTranslatedPackage(selectedPackage, language)} 
             onBack={() => {
               setSelectedPackage(null);
               setTimeout(() => {
@@ -972,11 +1123,16 @@ export default function App() {
             }} 
             setBookingForm={setBookingForm}
             scrollToId={scrollToId}
+            whatsappNumber={cmsContent.whatsappNumber}
+            onAddCRMLead={(newLead: CRMLead) => setCrmLeads((prev) => [newLead, ...prev])}
+            destinationFormEmail={cmsContent.destinationFormEmail}
+            tripadvisorUrl={cmsContent.socialReviewsLinks?.tripadvisor}
+            googleReviewsUrl={cmsContent.socialReviewsLinks?.google}
           />
         ) : selectedZonePage ? (
           <ZoneCatalogPage
             zone={selectedZonePage}
-            packages={packages}
+            packages={translatedPackages}
             onBack={() => {
               setSelectedZonePage(null);
               setTimeout(() => {
@@ -986,8 +1142,119 @@ export default function App() {
             }}
             onSelectPackage={(pkg) => selectPackageAndScroll(pkg)}
             language={language}
+            whatsappNumber={cmsContent.whatsappNumber}
           />
-        ) : (
+        ) : currentView === "nosotros" ? (
+          <NosotrosView 
+            cmsContent={cmsContent}
+            language={language}
+            onBack={() => setCurrentView("home")}
+            scrollToId={scrollToId}
+          />
+        ) : currentView === "blog" ? (
+          <BlogView 
+            blogPosts={blogPosts}
+            language={language}
+            onBack={() => setCurrentView("home")}
+            scrollToId={scrollToId}
+          />
+        ) : currentView === "contacto" ? (
+          <ContactoView 
+            cmsContent={cmsContent}
+            language={language}
+            onBack={() => setCurrentView("home")}
+          />
+        ) : currentView === "builder" ? (
+          <VisualBuilder 
+            onBack={() => setCurrentView("home")}
+            language={language}
+            whatsappNumber={cmsContent.whatsappNumber}
+            destinationFormEmail={cmsContent.destinationFormEmail}
+            packages={packages}
+          />
+        ) : ["privacy", "terms", "cookies", "notice", "complaints"].includes(currentView) ? (
+          <LegalView 
+            cmsContent={cmsContent}
+            currentType={currentView as any}
+            language={language}
+            onBack={() => setCurrentView("home")}
+            onUpdateCMSContent={(updated) => setCmsContent(updated)}
+            onAddCRMLead={(lead) => setCrmLeads(prev => [lead, ...prev])}
+          />
+        ) : (cmsContent.menuItems || DEFAULT_CMS_CONTENT.menuItems).some(item => item.type === "custom_page" && item.target === currentView) ? (() => {
+          const item = (cmsContent.menuItems || DEFAULT_CMS_CONTENT.menuItems).find(item => item.type === "custom_page" && item.target === currentView);
+          const title = language === "es" ? item?.customTitleEs || item?.labelEs : item?.customTitleEn || item?.labelEn;
+          const body = language === "es" ? item?.customContentEs : item?.customContentEn;
+          const image = item?.customImage || "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=1200";
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="py-12 sm:py-24 max-w-5xl mx-auto px-4 sm:px-6"
+            >
+              <button 
+                onClick={() => setCurrentView("home")}
+                className="mb-8 flex items-center gap-2 text-brand-pink font-bold text-xs uppercase cursor-pointer hover:underline"
+              >
+                ← {language === "es" ? "Volver al Inicio" : "Back to Home"}
+              </button>
+
+              <div className="relative rounded-3xl overflow-hidden h-72 sm:h-96 md:h-[400px] mb-12 shadow-lg">
+                <img 
+                  src={image} 
+                  alt={title} 
+                  className="w-full h-full object-cover filter brightness-[0.75]"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6 sm:p-12">
+                  <div className="text-left space-y-2 max-w-3xl">
+                    <span className="text-[10px] font-mono tracking-widest text-[#f58220] font-black uppercase">
+                      {language === "es" ? "EXPLORACIÓN EXCLUSIVA" : "EXCLUSIVE EXPLORATION"}
+                    </span>
+                    <h1 className="font-display font-black text-2xl sm:text-4xl text-white tracking-tight">
+                      {title}
+                    </h1>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div className="lg:col-span-8 text-left space-y-6">
+                  <div className="whitespace-pre-line text-brand-charcoal/80 leading-relaxed font-light text-xs sm:text-sm">
+                    {body || (language === "es" ? "Contenido por configurar desde el panel de administración." : "Content to be configured from the admin panel.")}
+                  </div>
+                </div>
+
+                <div className="lg:col-span-4 space-y-6">
+                  <div className="bg-brand-pink/5 rounded-3xl p-6 border border-brand-pink/15 text-left space-y-4">
+                    <h4 className="text-xs font-mono font-black text-brand-pink uppercase tracking-widest">
+                      {language === "es" ? "COTIZAR PLAN" : "BOOK PLAN"}
+                    </h4>
+                    <p className="text-xs text-brand-charcoal/85 leading-relaxed font-light">
+                      {language === "es" 
+                        ? "¿Quieres armar un itinerario para esta sección personalizada? Escríbenos directamente o usa el planificador inteligente."
+                        : "Wish to book this custom experience? Direct-message our team for exclusive local pricing."}
+                    </p>
+                    <button 
+                      onClick={() => {
+                        setCurrentView("contacto");
+                        setTimeout(() => {
+                          const contactTypeNode = document.getElementById("contacto");
+                          if (contactTypeNode) contactTypeNode.scrollIntoView({ behavior: "smooth" });
+                        }, 100);
+                      }}
+                      className="w-full py-3 bg-brand-pink hover:bg-brand-pink/90 active:scale-95 text-white font-black text-[10px] uppercase tracking-wider rounded-full shadow-md transition-all cursor-pointer text-center"
+                    >
+                      {language === "es" ? "Enviar Mensaje" : "Inquire Now"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })() : (
           <motion.div
             key="home-content"
             initial={{ opacity: 0 }}
@@ -1043,7 +1310,10 @@ export default function App() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
-                    className="font-display font-black text-3xl sm:text-5xl lg:text-6xl text-white tracking-widest uppercase leading-tight drop-shadow-xl max-w-5xl text-center"
+                    className="font-display font-black text-3xl sm:text-5xl lg:text-6.5xl text-white tracking-tight uppercase leading-tight drop-shadow-xl max-w-4xl text-center"
+                    style={{
+                      borderRadius: "0px"
+                    }}
                   >
                     {language === "es" 
                       ? `CONOCE ${slides[currentSlide].titleEs.toUpperCase()}`
@@ -1158,80 +1428,117 @@ export default function App() {
 
             </section>
 
-      {/* WHY US SECTION (10+ Years Trust) */}
-      <section id="nosotros" className="py-20 px-4 bg-white border-y border-brand-pink/5 relative overflow-hidden">
+      {/* Nosotros Section on Homepage - Dynamic & Beautifully Detailed */}
+      <section id="nosotros" className="py-20 px-4 sm:px-6 lg:px-8 bg-white border-y border-brand-pink/5 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
-          
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-[#e12d8a] uppercase font-mono tracking-widest text-xs font-bold mb-3 flex items-center justify-center gap-2">
-              <span className="w-8 h-[2px] bg-brand-pink"></span> {t.nosotrosTag} <span className="w-8 h-[2px] bg-brand-pink"></span>
-            </h2>
-            <h3 className="font-display text-3xl sm:text-4xl font-extrabold text-brand-charcoal tracking-tight">
-              {language === "es" ? cmsContent.aboutTitleEs : cmsContent.aboutTitleEn}
-            </h3>
-            <p className="text-brand-charcoal/70 font-light mt-4 whitespace-pre-line">
-              {language === "es" ? cmsContent.aboutDescEs : cmsContent.aboutDescEn}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 ">
-            {/* Feature 1 */}
-            <div className="bg-[#fbfaf8] border border-brand-pink/5 hover:border-brand-pink/20 hover:scale-[1.02] p-8 rounded-2xl shadow-sm transition-all flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-brand-pink/10 flex items-center justify-center text-brand-pink">
-                <Award className="w-6 h-6" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            {/* Left side: Stunning layered image and badges */}
+            <div className="relative group">
+              {/* Outer soft glowing background element */}
+              <div className="absolute -inset-4 rounded-[40px] bg-gradient-to-tr from-brand-pink/20 to-brand-orange/20 blur-2xl opacity-75 group-hover:opacity-90 transition-all duration-500" />
+              
+              <div className="relative rounded-[32px] overflow-hidden shadow-2xl border border-white/40 aspect-[4/3] md:aspect-video lg:aspect-[4/3] bg-neutral-100">
+                <img 
+                  src="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1000&auto=format&fit=crop&q=80" 
+                  alt="Sisari Travel - Aventura Impresionante" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                
+                {/* Floating dynamic stats card inside the image */}
+                <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-xl flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-brand-pink/10 flex items-center justify-center text-brand-pink shrink-0">
+                      <Compass className="w-5 h-5 text-brand-pink" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xs font-black text-brand-charcoal uppercase tracking-wider">Ayacucho, Perú</h4>
+                      <p className="text-[10px] text-brand-charcoal/60">{language === "es" ? "Agencia Formal Registrada" : "Officially Registered Agency"}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-emerald-500 text-white font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                    DIRCETUR
+                  </span>
+                </div>
               </div>
-              <h4 className="font-display font-bold text-lg text-brand-charcoal">
-                {t.nosotrosCard1Title}
-              </h4>
-              <p className="text-sm text-brand-charcoal/70 leading-relaxed font-light">
-                {t.nosotrosCard1Desc}
+
+              {/* Offset decorative badge */}
+              <div className="absolute -top-6 -right-5 bg-brand-orange text-white w-24 h-24 rounded-full flex flex-col items-center justify-center text-center shadow-lg transform rotate-12 group-hover:rotate-6 transition-all duration-500 select-none z-10 border-4 border-white">
+                <p className="font-display font-black text-xl leading-none">10+</p>
+                <p className="text-[8px] uppercase tracking-widest font-bold mt-0.5">{language === "es" ? "Años" : "Years"}</p>
+                <p className="text-[7px] text-white/80">{language === "es" ? "Trayectoria" : "History"}</p>
+              </div>
+            </div>
+
+            {/* Right side: High-fidelity details and corporate attributes */}
+            <div className="space-y-6 text-left">
+              <div className="inline-flex items-center gap-2 bg-brand-pink/10 text-brand-pink text-[10px] uppercase font-mono tracking-widest px-3 py-1 rounded-full font-black border border-brand-pink/15">
+                <Users className="w-3.5 h-3.5" />
+                <span>{language === "es" ? "CONÓCENOS" : "GET TO KNOW US"}</span>
+              </div>
+              
+              <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-[#2c2c2c] tracking-tight leading-tight">
+                {language === "es" ? "Sobre Nosotros: Sisari Travel" : "About Us: Sisari Travel"}
+              </h2>
+              
+              <h3 className="text-md sm:text-lg font-semibold text-brand-orange leading-snug">
+                {language === "es" ? cmsContent.nosotrosHeadlineEs : cmsContent.nosotrosHeadlineEn}
+              </h3>
+              
+              <p className="text-brand-charcoal/80 text-sm sm:text-base font-light leading-relaxed">
+                {language === "es" ? cmsContent.nosotrosDescEs : cmsContent.nosotrosDescEn}
+                {" "}
+                {language === "es" 
+                  ? "Nos apasiona que cada visitante descubra el misticismo, los monumentos milenarios y los paisajes impresionantes de Ayacucho y de todo el Perú. Con Sisari Travel, viajas con confianza y calor humano certificado."
+                  : "We are passionate about letting every traveler discover the mysticism, ancient monuments, and awe-inspiring landscapes of Ayacucho and all of Peru. With Sisari Travel, you travel with security and certified warmth."}
               </p>
-            </div>
 
-            {/* Feature 2 */}
-            <div className="bg-[#fbfaf8] border border-brand-pink/5 hover:border-brand-pink/20 hover:scale-[1.02] p-8 rounded-2xl shadow-sm transition-all flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center text-brand-orange">
-                <Shield className="w-6 h-6" />
-              </div>
-              <h4 className="font-display font-bold text-lg text-brand-charcoal">
-                {t.nosotrosCard2Title}
-              </h4>
-              <p className="text-sm text-brand-charcoal/70 leading-relaxed font-light">
-                {t.nosotrosCard2Desc}
-              </p>
-            </div>
+              {/* Values/Attributes lists */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-brand-pink/10">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-brand-pink/10 hover:bg-brand-pink/20 transition-colors text-brand-pink shrink-0 mt-0.5">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-brand-charcoal uppercase tracking-wider">{language === "es" ? cmsContent.nosotrosValue1TitleEs : cmsContent.nosotrosValue1TitleEn}</h4>
+                    <p className="text-xs text-brand-charcoal/70 mt-1 font-light leading-relaxed">{language === "es" ? cmsContent.nosotrosValue1DescEs : cmsContent.nosotrosValue1DescEn}</p>
+                  </div>
+                </div>
 
-            {/* Feature 3 */}
-            <div className="bg-[#fbfaf8] border border-brand-pink/5 hover:border-brand-pink/20 hover:scale-[1.02] p-8 rounded-2xl shadow-sm transition-all flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-brand-pink/10 flex items-center justify-center text-brand-pink">
-                <Compass className="w-6 h-6" />
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-brand-orange/10 hover:bg-brand-orange/20 transition-colors text-brand-orange shrink-0 mt-0.5">
+                    <Compass className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-brand-charcoal uppercase tracking-wider">{language === "es" ? cmsContent.nosotrosValue3TitleEs : cmsContent.nosotrosValue3TitleEn}</h4>
+                    <p className="text-xs text-brand-charcoal/70 mt-1 font-light leading-relaxed">{language === "es" ? cmsContent.nosotrosValue3DescEs : cmsContent.nosotrosValue3DescEn}</p>
+                  </div>
+                </div>
               </div>
-              <h4 className="font-display font-bold text-lg text-brand-charcoal">
-                {t.nosotrosCard3Title}
-              </h4>
-              <p className="text-sm text-brand-charcoal/70 leading-relaxed font-light">
-                {t.nosotrosCard3Desc}
-              </p>
+
+              {/* Action Buttons */}
+              <div className="pt-4 flex flex-wrap gap-4 items-center">
+                <button
+                  type="button"
+                  onClick={() => setCurrentView("nosotros")}
+                  className="px-6 py-3 rounded-full bg-brand-charcoal hover:bg-black text-white text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  {language === "es" ? "Ver Más Historia →" : "Read Full Story →"}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => scrollToId("contacto")}
+                  className="px-6 py-3 rounded-full bg-brand-pink hover:bg-brand-pink/90 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  {language === "es" ? "Contactar Asesor" : "Speak to an Expert"}
+                </button>
+              </div>
+
             </div>
           </div>
-
-          {/* Quick statement directly from local experts */}
-          <div className="mt-16 bg-gradient-to-r from-brand-pink/5 to-brand-orange/5 border border-brand-pink/10 p-8 rounded-3xl flex flex-col sm:flex-row items-center gap-6 justify-between max-w-5xl mx-auto">
-            <div className="flex items-center gap-4 text-left">
-              <span className="hidden sm:inline text-4xl">🌻</span>
-              <div>
-                <p className="text-brand-charcoal font-bold text-lg">{t.ofrendamosFrase}</p>
-                <p className="text-xs text-brand-charcoal/70 font-light mt-1">{t.oficinaDireccion}</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => scrollToId("contacto")}
-              className="bg-brand-orange hover:bg-brand-orange/95 text-white font-bold text-sm px-6 py-3 rounded-full shadow-md transition-all whitespace-nowrap cursor-pointer"
-            >
-              {t.contactarOficina}
-            </button>
-          </div>
-
         </div>
       </section>
 
@@ -1251,71 +1558,7 @@ export default function App() {
             </p>
           </div>
 
-          {/* Quick Hub Dropdown - Redirecting to Zone Catalog subpages */}
-          <div className="max-w-md mx-auto mb-16 text-center relative z-20">
-            <label className="block text-xs font-mono uppercase tracking-wider text-brand-charcoal/50 mb-2.5 font-bold">
-              {t.irCatálogoCompleto}
-            </label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsSectionDropdownOpen(!isSectionDropdownOpen)}
-                className="w-full bg-white border border-brand-pink/20 rounded-2xl px-5 py-3.5 shadow-sm hover:shadow-md transition-all text-sm font-bold text-brand-charcoal flex items-center justify-between cursor-pointer focus:outline-none"
-              >
-                <span className="flex items-center gap-2">
-                  {t.verCatalogosCompletos}
-                </span>
-                <ChevronDown className={`w-4 h-4 text-brand-pink transition-transform duration-200 ${isSectionDropdownOpen ? "rotate-180" : ""}`} />
-              </button>
 
-              <AnimatePresence>
-                {isSectionDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-brand-pink/10 py-2.5 z-30 flex flex-col text-left text-xs gap-0.5"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedZonePage("local");
-                        setIsSectionDropdownOpen(false);
-                      }}
-                      className="px-4 py-2.5 hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer text-brand-charcoal text-left"
-                    >
-                      <span className="text-xs font-bold text-brand-charcoal">{t.verCatalogoEsLocal}</span>
-                      <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">{t.verCatalogoEsLocalDesc}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedZonePage("national");
-                        setIsSectionDropdownOpen(false);
-                      }}
-                      className="px-4 py-2.5 hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer text-brand-charcoal text-left"
-                    >
-                      <span className="text-xs font-bold text-brand-charcoal">{t.verCatalogoEsNacional}</span>
-                      <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">{t.verCatalogoEsNacionalDesc}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedZonePage("international");
-                        setIsSectionDropdownOpen(false);
-                      }}
-                      className="px-4 py-2.5 hover:bg-brand-pink/5 flex flex-col transition-colors cursor-pointer text-brand-charcoal text-left"
-                    >
-                      <span className="text-xs font-bold text-[#2c2c2c]">{t.verCatalogoEsInter}</span>
-                      <span className="text-[10px] text-brand-charcoal/50 font-light mt-0.5">{t.verCatalogoEsInterDesc}</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
 
           {/* Core divided package section on Homepage */}
           <div className="flex flex-col gap-20">
@@ -1339,12 +1582,12 @@ export default function App() {
                   onClick={() => setSelectedZonePage("local")}
                   className="bg-brand-pink/5 text-brand-pink hover:bg-brand-pink hover:text-white text-xs font-extrabold px-5 py-3 rounded-xl border border-brand-pink/10 hover:border-brand-pink transition-all shrink-0 cursor-pointer text-center"
                 >
-                  {t.verCatalogoCompleto} Ayacucho ({packages.filter(p => p.category === 'local').length} {t.destinos}) →
+                  {t.verCatalogoCompleto} Ayacucho ({translatedPackages.filter(p => p.category === 'local').length} {t.destinos}) →
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {packages.filter(p => p.category === 'local').slice(0, 3).map((pkg) => (
+                {translatedPackages.filter(p => p.category === 'local').slice(0, 3).map((pkg) => (
                   <div key={pkg.id} className="bg-white rounded-3xl overflow-hidden border border-brand-pink/5 hover:border-brand-pink/25 hover:shadow-xl transition-all flex flex-col h-full group">
                     <div onClick={() => selectPackageAndScroll(pkg)} className="relative overflow-hidden aspect-[4/3] cursor-pointer">
                       <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
@@ -1377,7 +1620,7 @@ export default function App() {
                           <p className="text-xl font-display font-extrabold text-brand-charcoal mt-1">{pkg.price}</p>
                         </div>
                         <div className="flex gap-2">
-                          <a href={`https://wa.me/51999999999?text=${encodeURIComponent(pkg.whatsAppText)}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"><Phone className="w-4 h-4 fill-white text-green-500" /></a>
+                          <a href={`https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(pkg.whatsAppText)}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"><Phone className="w-4 h-4 fill-white text-green-500" /></a>
                           <button type="button" onClick={() => selectPackageAndScroll(pkg)} className="bg-brand-pink text-white hover:bg-brand-pink/90 active:scale-95 text-xs font-bold px-4 py-2.5 rounded-xl block shadow-sm transition-all cursor-pointer">{t.verDetalle}</button>
                         </div>
                       </div>
@@ -1406,12 +1649,12 @@ export default function App() {
                   onClick={() => setSelectedZonePage("national")}
                   className="bg-brand-orange/5 text-brand-orange hover:bg-brand-orange hover:text-white text-xs font-extrabold px-5 py-3 rounded-xl border border-brand-orange/10 hover:border-brand-orange transition-all shrink-0 cursor-pointer text-center"
                 >
-                  {t.verCatalogoCompleto} Perú ({packages.filter(p => p.category === 'national').length} {t.destinos}) →
+                  {t.verCatalogoCompleto} Perú ({translatedPackages.filter(p => p.category === 'national').length} {t.destinos}) →
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {packages.filter(p => p.category === 'national').slice(0, 3).map((pkg) => (
+                {translatedPackages.filter(p => p.category === 'national').slice(0, 3).map((pkg) => (
                   <div key={pkg.id} className="bg-white rounded-3xl overflow-hidden border border-brand-pink/5 hover:border-brand-pink/25 hover:shadow-xl transition-all flex flex-col h-full group">
                     <div onClick={() => selectPackageAndScroll(pkg)} className="relative overflow-hidden aspect-[4/3] cursor-pointer">
                       <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
@@ -1443,7 +1686,7 @@ export default function App() {
                           <p className="text-xl font-display font-extrabold text-brand-charcoal mt-1">{pkg.price}</p>
                         </div>
                         <div className="flex gap-2">
-                          <a href={`https://wa.me/51999999999?text=${encodeURIComponent(pkg.whatsAppText)}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"><Phone className="w-4 h-4 fill-white text-green-500" /></a>
+                          <a href={`https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(pkg.whatsAppText)}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"><Phone className="w-4 h-4 fill-white text-green-500" /></a>
                           <button type="button" onClick={() => selectPackageAndScroll(pkg)} className="bg-brand-pink text-white hover:bg-brand-pink/90 active:scale-95 text-xs font-bold px-4 py-2.5 rounded-xl block shadow-sm transition-all cursor-pointer">{t.verDetalle}</button>
                         </div>
                       </div>
@@ -1472,12 +1715,12 @@ export default function App() {
                   onClick={() => setSelectedZonePage("international")}
                   className="bg-purple-500/5 text-purple-600 hover:bg-purple-600 hover:text-white text-xs font-extrabold px-5 py-3 rounded-xl border border-purple-100 hover:border-purple-600 transition-all shrink-0 cursor-pointer text-center"
                 >
-                  {t.verCatalogoCompleto} Internacional ({packages.filter(p => p.category === 'international').length} {t.destinos}) →
+                  {t.verCatalogoCompleto} Internacional ({translatedPackages.filter(p => p.category === 'international').length} {t.destinos}) →
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {packages.filter(p => p.category === 'international').slice(0, 3).map((pkg) => (
+                {translatedPackages.filter(p => p.category === 'international').slice(0, 3).map((pkg) => (
                   <div key={pkg.id} className="bg-white rounded-3xl overflow-hidden border border-brand-pink/5 hover:border-brand-pink/25 hover:shadow-xl transition-all flex flex-col h-full group">
                     <div onClick={() => selectPackageAndScroll(pkg)} className="relative overflow-hidden aspect-[4/3] cursor-pointer">
                       <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
@@ -1509,7 +1752,7 @@ export default function App() {
                           <p className="text-xl font-display font-extrabold text-brand-charcoal mt-1">{pkg.price}</p>
                         </div>
                         <div className="flex gap-2">
-                          <a href={`https://wa.me/51999999999?text=${encodeURIComponent(pkg.whatsAppText)}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"><Phone className="w-4 h-4 fill-white text-green-500" /></a>
+                          <a href={`https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(pkg.whatsAppText)}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"><Phone className="w-4 h-4 fill-white text-green-500" /></a>
                           <button type="button" onClick={() => selectPackageAndScroll(pkg)} className="bg-brand-pink text-white hover:bg-brand-pink/90 active:scale-95 text-xs font-bold px-4 py-2.5 rounded-xl block shadow-sm transition-all cursor-pointer">{t.verDetalle}</button>
                         </div>
                       </div>
@@ -1541,7 +1784,7 @@ export default function App() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
             
             {/* Input planner form */}
             <div className="lg:col-span-5 bg-white border border-brand-pink/10 rounded-3xl p-6 sm:p-8 shadow-md">
@@ -1693,29 +1936,44 @@ export default function App() {
             </div>
 
             {/* AI Results Screen Output */}
-            <div className="lg:col-span-7 w-full">
-              <div className="bg-[#fbfaf8] border-2 border-dashed border-brand-pink/15 rounded-3xl min-h-[480px] p-6 lg:p-8 flex flex-col justify-center items-center relative overflow-hidden bg-white">
+            <div className="lg:col-span-7 w-full h-full flex flex-col">
+              <div className="bg-[#fbfaf8] border-2 border-dashed border-brand-pink/15 rounded-3xl min-h-[480px] lg:min-h-0 h-full p-6 lg:p-8 flex flex-col justify-center items-center relative overflow-hidden bg-white flex-1">
                 
                 <AnimatePresence mode="wait">
                   
-                  {/* Initial state placeholder */}
+                  {/* Initial state placeholder - replaced with a striking impressive image */}
                   {!isPlanning && !itineraryResult && !itineraryError && (
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="text-center max-w-md flex flex-col items-center gap-4 bg-transparent"
+                      className="absolute inset-0 w-full h-full flex flex-col justify-end p-8 text-left"
                     >
-                      <div className="w-16 h-16 rounded-full bg-brand-pink/10 flex items-center justify-center text-brand-pink mb-2 animate-pulse">
-                        <Sparkles className="w-8 h-8" />
-                      </div>
-                      <h4 className="font-display font-extrabold text-[#2c2c2c] text-xl">Tu Itinerario Inteligente Aquí</h4>
-                      <p className="text-sm text-brand-charcoal/75 leading-relaxed font-light">
-                        Configura las opciones en el panel izquierdo y haz clic en "Planificar Ruta". Obtendrás un cronograma día por día detallado al instante gracias al saber acumulado de Sisari Travel en turismo formal de primer nivel.
-                      </p>
-                      <div className="flex items-center gap-2 mt-2 bg-brand-orange/5 border border-brand-orange/15 px-4 py-2 rounded-2xl">
-                        <Award className="w-4.5 h-4.5 text-brand-orange" />
-                        <span className="text-[10px] uppercase font-bold text-brand-orange tracking-wider">Algoritmo entrenado con 10+ años de experiencia</span>
+                      {/* Background Image overlay */}
+                      <img 
+                        src="https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=1200&auto=format&fit=crop&q=80"
+                        alt="Aventura Impresionante Ayacucho"
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                        referrerPolicy="no-referrer"
+                      />
+                      {/* Color grading overlay gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-brand-charcoal via-brand-charcoal/50 to-transparent" />
+                      
+                      {/* Dynamic typography */}
+                      <div className="relative z-10 space-y-2 mt-auto">
+                        <span className="inline-block bg-brand-orange text-white text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow mb-1">
+                          ⛰️ EN VIVO DESDE AYACUCHO
+                        </span>
+                        <h4 className="font-display font-black text-white text-3xl sm:text-4xl tracking-tight leading-none uppercase">
+                          AYACUCHO TE ESPERA
+                        </h4>
+                        <p className="text-white/90 text-xs sm:text-sm max-w-lg leading-relaxed font-light">
+                          Configura las opciones en el panel de la izquierda y haz clic en "Planificar Ruta". Nuestro motor inteligente diseñará un itinerario en vivo 100% interactivo para descubrir la majestuosidad de la región.
+                        </p>
+                        
+                        <div className="flex items-center gap-1.5 pt-2 text-[10px] text-white/70 font-semibold uppercase tracking-wider font-mono">
+                          <span>✨ PERSONALIZADOR INTELIGENTE COMPLETO</span>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -1813,14 +2071,107 @@ export default function App() {
 
                         {/* Travel Specs Pills */}
                         <div className="flex flex-wrap gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-pink/10 text-brand-pink px-3 py-1.5 rounded-full border border-brand-pink/15 font-mono">
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-pink/10 text-brand-pink px-3 py-1.5 rounded-full border border-brand-pink/15 font-mono font-bold">
                             {itineraryResult.durationDays} Días
                           </span>
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-orange/10 text-brand-orange px-3 py-1.5 rounded-full border border-brand-orange/15 font-mono">
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-orange/10 text-brand-orange px-3 py-1.5 rounded-full border border-brand-orange/15 font-mono font-bold">
                             {itineraryResult.travelStyle}
                           </span>
                         </div>
                       </div>
+
+                      {/* SMART APP EMAIL-WHATSAPP DIRECT NOTIFICATION ENGAGE */}
+                      {!iaLeadSubmitted ? (
+                        <div className="bg-[#fcf8f6] border-2 border-brand-orange/20 rounded-2xl p-5 shadow-sm flex flex-col gap-3.5 text-left">
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-9 h-9 rounded-full bg-brand-orange/15 flex items-center justify-center text-lg shrink-0">
+                              📩
+                            </div>
+                            <div className="space-y-0.5">
+                              <h5 className="font-display font-extrabold text-brand-charcoal text-sm leading-tight">
+                                {language === "es" ? "Recibir un Reporte Completo en tu Correo Directo" : "Get Itinerary Direct in Your Inbox"}
+                              </h5>
+                              <p className="text-[11px] text-brand-charcoal/60 font-light">
+                                {language === "es" 
+                                  ? "Guarda este plan inteligente y recibe alertas de ofertas exclusivas de temporada para tu viaje de ensueño."
+                                  : "Save this dynamic AI layout on your server and get active discount links on local hotels."}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] uppercase font-bold text-brand-charcoal/60 font-mono tracking-wider">Tu Nombre</label>
+                              <input 
+                                type="text"
+                                placeholder={language === "es" ? "Ej. Laura Mendoza" : "e.g., Laura Mendoza"}
+                                value={iaClientName}
+                                onChange={(e) => setIaClientName(e.target.value)}
+                                className="bg-white border border-brand-pink/15 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-pink focus:outline-none text-brand-charcoal"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] uppercase font-bold text-brand-charcoal/60 font-mono tracking-wider">Tu Correo Electrónico</label>
+                              <input 
+                                type="email"
+                                placeholder="laura@ejemplo.com"
+                                value={iaClientEmail}
+                                onChange={(e) => setIaClientEmail(e.target.value)}
+                                className="bg-white border border-brand-pink/15 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-pink focus:outline-none text-brand-charcoal"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] uppercase font-bold text-brand-charcoal/60 font-mono tracking-wider font-bold">Tu Celular / WhatsApp</label>
+                              <input 
+                                type="tel"
+                                placeholder="+51 987 654 321"
+                                value={iaClientPhone}
+                                onChange={(e) => setIaClientPhone(e.target.value)}
+                                className="bg-white border border-brand-pink/15 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-pink focus:outline-none text-brand-charcoal font-bold"
+                              />
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleSendAIShipping}
+                            disabled={isSendingAIShip}
+                            className="bg-brand-pink hover:bg-brand-pink/90 text-white font-extrabold text-xs py-2.5 rounded-xl shadow transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                          >
+                            {isSendingAIShip ? (
+                              <span>{language === "es" ? "Enviando Itinerario..." : "Shipping Itinerary..."}</span>
+                            ) : (
+                              <>
+                                <span>{language === "es" ? "Enviar Itinerario Directo por Correo" : "Send Itinerary Direct"}</span>
+                                <Send className="w-3.5 h-3.5" />
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="bg-emerald-50 border border-emerald-500/25 rounded-2xl p-5 shadow-xs flex flex-col gap-2.5 text-left">
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-lg shrink-0">
+                              ✅
+                            </div>
+                            <div className="space-y-0.5">
+                              <h5 className="font-display font-black text-emerald-800 text-sm leading-tight">
+                                {language === "es" ? "¡Itinerario Despachado al Correo!" : "Itinerary Shipped Direct!"}
+                              </h5>
+                              <p className="text-[10px] text-emerald-700 font-semibold font-mono">
+                                {language === "es" 
+                                  ? `Enviado con éxito a: ${iaClientEmail}`
+                                  : `Sent successfully to: ${iaClientEmail}`}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-[#2c2c2c]/85 leading-relaxed font-light">
+                            {language === "es"
+                              ? "Hemos enviado su plan de viaje por correo directo y registrado sus preferencias de viaje en nuestro CRM. Nuestros asesores locales ya están cotizando pasajes y hotelería de primer nivel para coordinar por WhatsApp."
+                              : "Your travel settings are logged in our CRM system. Our agents have set optimal package rates with local boutique hotels."}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Split Output details / columns */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 w-full">
@@ -1945,13 +2296,17 @@ export default function App() {
                         </button>
                         
                         <a
-                          href={`https://wa.me/51999999999?text=${encodeURIComponent(`Hola Sisari Travel, acabo de diseñar un plan de viaje para ${itineraryResult.destination} de ${itineraryResult.durationDays} días con su Asistente IA. Quisiera presupuestar precios de pasajes y hospedaje por favor.`)}`}
+                          href={`https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(
+                            iaLeadSubmitted 
+                              ? `Hola Sisari Travel! Soy *${iaClientName}*. Acabo de planificar con su Asistente IA una ruta espectacular para *${itineraryResult.destination}* (${itineraryResult.durationDays} días, estilo *${itineraryResult.travelStyle}*). Deseo que un asesor me contacte por favor para presupuestar.`
+                              : `Hola Sisari Travel, acabo de diseñar un plan de viaje para *${itineraryResult.destination}* (${itineraryResult.durationDays} días) con su Asistente IA. Quisiera presupuestar precios de pasajes y hospedaje por favor.`
+                          )}`}
                           target="_blank"
                           rel="noreferrer"
                           className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
                         >
                           <Phone className="w-4 h-4 fill-white text-green-500 shrink-0" />
-                          <span>Enviar Itinerario por WhatsApp</span>
+                          <span>{iaLeadSubmitted ? "Chatear por WhatsApp sobre mi Rutero" : "Enviar Itinerario por WhatsApp"}</span>
                         </a>
                       </div>
 
@@ -2035,7 +2390,7 @@ export default function App() {
 
           {/* Articles grid */}
           {(() => {
-            const filteredPosts = blogPosts.filter(post => {
+            const tempPosts = blogPosts.filter(post => {
               // Category filter
               const matchesCategory = blogCategoryFilter === "Todos" || post.category === blogCategoryFilter;
               
@@ -2051,6 +2406,7 @@ export default function App() {
 
               return matchesCategory && matchesSearch;
             });
+            const filteredPosts = tempPosts.slice(0, 3);
 
             if (filteredPosts.length === 0) {
               return (
@@ -2355,9 +2711,13 @@ export default function App() {
 
                 {/* Author card block */}
                 <div className="flex items-center gap-3 border-t border-brand-pink/15 pt-4 mt-auto">
-                  <div className="w-10 h-10 rounded-full bg-brand-pink/15 text-brand-pink text-sm font-extrabold flex items-center justify-center font-display uppercase">
-                    {test.avatarSeed.charAt(0)}
-                  </div>
+                  {test.avatarSeed && (test.avatarSeed.startsWith("http") || test.avatarSeed.startsWith("data:image")) ? (
+                    <img src={test.avatarSeed} alt={test.name} className="w-10 h-10 rounded-full object-cover border border-brand-pink/10" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-brand-pink/15 text-brand-pink text-sm font-extrabold flex items-center justify-center font-display uppercase">
+                      {test.avatarSeed ? test.avatarSeed.charAt(0) : test.name.charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <h5 className="font-display font-semibold text-xs text-brand-charcoal">{test.name}</h5>
                     <p className="text-[10px] text-[#f58220] font-bold uppercase tracking-wider">{test.role}</p>
@@ -2536,6 +2896,7 @@ export default function App() {
                             <option value="Aguas Turquesas de Millpu">Aguas Turquesas de Millpu (Full Day)</option>
                             <option value="City Tour Ayacucho Colonial">City Tour Ayacucho Colonial (Medio Día)</option>
                             <option value="Ruta Arqueológica Wari y Quinua">Complejo Arqueológico de Wari y Quinua (Full Day)</option>
+                            <option value="Centro Arqueológico Vilcashuamán">Centro Arqueológico Vilcashuamán (Full Day)</option>
                           </optgroup>
                           <optgroup label="Salidas de Nivel Nacional">
                             <option value="Machu Picchu Mágico & Cusco Histórico">Machu Picchu Mágico & Cusco Histórico (4 Días)</option>
@@ -2601,7 +2962,9 @@ export default function App() {
                         ✓
                       </div>
                       <h3 className="font-display font-bold text-lg text-brand-charcoal">¡Solicitud Generada con Éxito!</h3>
-                      <p className="text-xs text-brand-charcoal/70">Un asesor de Sisari Travel se comunicará al celular en breve.</p>
+                      <p className="text-xs text-brand-charcoal/70">
+                        Un asesor de Sisari Travel se comunicará al celular en breve. Su reserva se ha enviado al correo de la empresa <span className="font-bold text-brand-pink">{cmsContent.destinationFormEmail || "retabloweb@gmail.com"}</span>.
+                      </p>
                     </div>
 
                     {/* Receipt Details Box */}
@@ -2663,7 +3026,7 @@ export default function App() {
                       </button>
 
                       <a
-                        href={`https://wa.me/51999999999?text=${encodeURIComponent(`Hola Sisari Travel, soy ${bookingSuccessTicket.travelerName}. Acabo de registrar mi voucher ${bookingSuccessTicket.ticketId} para reservar el paquete "${bookingSuccessTicket.packageName}". Quisiera confirmar las tarifas.`)}`}
+                        href={`https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(`Hola Sisari Travel, soy ${bookingSuccessTicket.travelerName}. Acabo de registrar mi voucher ${bookingSuccessTicket.ticketId} para reservar el paquete "${bookingSuccessTicket.packageName}". Quisiera confirmar las tarifas.`)}`}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full sm:w-1/2 bg-green-500 hover:bg-green-600 font-bold py-3 rounded-lg text-white flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer text-xs"
@@ -2696,70 +3059,114 @@ export default function App() {
             {/* Col 1 Brand Statement */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2.5">
-                <SisariLogoSVG className="w-10 h-10" />
-                <div className="flex flex-col">
-                  <span className="font-display font-extrabold text-[18px] tracking-widest text-white leading-none logo-text-spacing">
-                    SISARI
-                  </span>
-                  <span className="text-[9px] font-medium tracking-[0.25em] text-brand-pink leading-tight">
-                    TRAVEL <span className="text-brand-orange font-bold">PERÚ</span>
-                  </span>
-                </div>
+                <img
+                  src={cmsContent.logoFooterImage || cmsContent.logoImage || "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=200&q=80"}
+                  alt="Sisari Travel Footer Logo"
+                  referrerPolicy="no-referrer"
+                  className="h-10 w-auto max-w-[160px] object-contain"
+                />
               </div>
               <p className="text-[#a0a0a0] font-light leading-relaxed">
-                Su operadora de turismo de confianza en la histórica Ayacucho con más de 10 años promoviendo la alfarería local, el senderismo ético y las memorias familiares por el mundo.
+                {language === "es" 
+                  ? (cmsContent.footerSloganEs || "Su operadora de turismo de confianza en la histórica Ayacucho con más de 10 años promoviendo la alfarería local, el senderismo ético y las memorias familiares por el mundo.") 
+                  : (cmsContent.footerSloganEn || "Your trusted tour operator in historic Ayacucho with over 10 years promoting local pottery, ethical trekking, and family memories around the world.")}
               </p>
-              <div className="flex gap-3 mt-1.5">
-                <span className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-brand-pink transition-all font-bold cursor-pointer">f</span>
-                <span className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-brand-pink transition-all font-bold cursor-pointer">ig</span>
-                <span className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-[#f58220] transition-all font-bold cursor-pointer">yt</span>
+              
+              {/* 5 Professional social media icons */}
+              <div className="flex items-center gap-2.5 mt-2">
+                <a 
+                  href={cmsContent.socialLinks?.facebook || "https://facebook.com"} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-brand-pink hover:text-white flex items-center justify-center text-white transition-all shadow-md group"
+                  title="Facebook"
+                >
+                  <Facebook className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </a>
+                <a 
+                  href={cmsContent.socialLinks?.instagram || "https://instagram.com"} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-brand-pink hover:text-white flex items-center justify-center text-white transition-all shadow-md group"
+                  title="Instagram"
+                >
+                  <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </a>
+                <a 
+                  href={cmsContent.socialLinks?.tiktok || "https://tiktok.com"} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-brand-pink hover:text-white flex items-center justify-center text-white transition-all shadow-md group"
+                  title="TikTok"
+                >
+                  <TiktokIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </a>
+                <a 
+                  href={cmsContent.socialLinks?.youtube || "https://youtube.com"} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-brand-pink hover:text-white flex items-center justify-center text-white transition-all shadow-md group"
+                  title="YouTube"
+                >
+                  <Youtube className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </a>
+                <a 
+                  href={cmsContent.socialLinks?.linkedin || "https://linkedin.com"} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-brand-pink hover:text-white flex items-center justify-center text-white transition-all shadow-md group"
+                  title="LinkedIn"
+                >
+                  <Linkedin className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </a>
               </div>
             </div>
 
             {/* Col 2 Quick links */}
             <div className="flex flex-col gap-4">
               <h4 className="font-display font-bold text-xs uppercase text-white tracking-widest">Navegación</h4>
-              <ul className="space-y-2.5 font-light text-[#a0a0a0]">
-                <li><button onClick={() => scrollToId("inicio")} className="hover:text-brand-pink transition-colors">Inicio</button></li>
-                <li><button onClick={() => scrollToId("paquetes")} className="hover:text-brand-pink transition-colors">Ver Paquetes Turísticos</button></li>
-                <li><button onClick={() => scrollToId("nosotros")} className="hover:text-brand-pink transition-colors">Filosofía de Servicio</button></li>
-                <li><button onClick={() => scrollToId("planificador")} className="hover:text-brand-orange transition-colors flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-brand-orange shrink-0" /> Planificador Itinerarios por IA</button></li>
-                <li><button onClick={() => scrollToId("contacto")} className="hover:text-brand-pink transition-colors">Reservas directas</button></li>
+              <ul className="space-y-2.5 font-light text-[#a0a0a0] text-left">
+                <li><button onClick={() => scrollToId("inicio")} className="hover:text-brand-pink transition-colors cursor-pointer text-left block">Inicio</button></li>
+                <li><button onClick={() => scrollToId("nosotros")} className="hover:text-brand-pink transition-colors cursor-pointer text-left block">Nosotros</button></li>
+                <li><button onClick={() => scrollToId("paquetes")} className="hover:text-brand-pink transition-colors cursor-pointer text-left block">Paquetes</button></li>
+                <li><button onClick={() => scrollToId("blog")} className="hover:text-brand-pink transition-colors cursor-pointer text-left block">Blog y Noticias</button></li>
+                <li><button onClick={() => scrollToId("contacto")} className="hover:text-brand-pink transition-colors cursor-pointer text-left block">Contacto</button></li>
               </ul>
             </div>
 
             {/* Col 3 Local landmarks packages */}
             <div className="flex flex-col gap-4">
               <h4 className="font-display font-bold text-xs uppercase text-white tracking-widest">Salidas Locales</h4>
-              <ul className="space-y-2.5 font-light text-[#a0a0a0]">
-                <li><button onClick={() => { setActiveTab("local"); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block">Pozas Turquesas de Millpu</button></li>
-                <li><button onClick={() => { setActiveTab("local"); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block">Ruinas pre-incas de Wari</button></li>
-                <li><button onClick={() => { setActiveTab("local"); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block">Quinua Pueblo Artesanal</button></li>
-                <li><button onClick={() => { setActiveTab("local"); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block">Ayacucho Colonial de 33 Iglesias</button></li>
+              <ul className="space-y-2.5 font-light text-[#a0a0a0] text-left">
+                <li><button onClick={() => { setSelectedZonePage("local"); setSelectedPackage(null); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">Pozas Turquesas de Millpu</button></li>
+                <li><button onClick={() => { setSelectedZonePage("local"); setSelectedPackage(null); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">Ruinas pre-incas de Wari</button></li>
+                <li><button onClick={() => { setSelectedZonePage("local"); setSelectedPackage(null); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">Quinua Pueblo Artesanal</button></li>
+                <li><button onClick={() => { setSelectedZonePage("local"); setSelectedPackage(null); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">Ayacucho Colonial</button></li>
+                <li><button onClick={() => { setSelectedZonePage("local"); setSelectedPackage(null); scrollToId("paquetes"); }} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">Centro Arqueológico Vilcashuamán</button></li>
               </ul>
             </div>
 
-            {/* Col 4 Contact card block */}
+            {/* Col 4 Policies card block */}
             <div className="flex flex-col gap-4">
-              <h4 className="font-display font-bold text-xs uppercase text-white tracking-widest">Atención Regional</h4>
-              <p className="text-[#a0a0a0] font-light leading-relaxed">
-                ¿Buscando tours de promoción de colegios o excursiones privadas por el feriado nacional de Fiestas Patrias? Escríbenos de inmediato.
-              </p>
-              <div className="flex flex-col gap-2 font-semibold">
-                <a href="tel:+51987654321" className="text-white hover:text-brand-pink transition-colors flex items-center gap-1">
-                  📞 +51 987 654 321
-                </a>
-                <a href="mailto:reservas@sisaritravel.pe" className="text-white hover:text-brand-pink transition-colors flex items-center gap-1 font-mono text-[11px]">
-                  ✉ reservas@sisaritravel.pe
-                </a>
-              </div>
+              <h4 className="font-display font-bold text-xs uppercase text-white tracking-widest">POLÍTICAS</h4>
+              <ul className="space-y-2.5 font-light text-[#a0a0a0] text-[#a0a0a0] text-left">
+                <li><button onClick={() => scrollToId("privacy")} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">1. Política de Privacidad</button></li>
+                <li><button onClick={() => scrollToId("cookies")} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">2. Política de Cookies</button></li>
+                <li><button onClick={() => scrollToId("terms")} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">3. Términos y Condiciones</button></li>
+                <li><button onClick={() => scrollToId("notice")} className="hover:text-brand-pink transition-colors text-left block cursor-pointer">4. Aviso Legal</button></li>
+                <li><button onClick={() => scrollToId("complaints")} className="hover:text-brand-pink transition-colors text-left block cursor-pointer font-bold text-brand-orange">5. Libro de Reclamaciones 📝</button></li>
+              </ul>
             </div>
 
           </div>
 
           {/* Underfooter copyright */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-[#808080] font-mono border-t border-white/5 pt-6">
-            <p>© {new Date().getFullYear()} Sisari Travel Perú. Todos los derechos reservados.</p>
+            <p>
+              © {new Date().getFullYear()} {language === "es" 
+                ? (cmsContent.footerCopyrightEs || "Sisari Travel Perú. Todos los derechos reservados.") 
+                : (cmsContent.footerCopyrightEn || "Sisari Travel Peru. All rights reserved.")}
+            </p>
             <div className="flex gap-4">
               <a href="#" className="hover:text-white transition-colors">Políticas de Privacidad</a>
               <span>•</span>
@@ -2857,7 +3264,7 @@ export default function App() {
                   {language === "es" ? "Contacta vía WhatsApp real:" : "Speak to a real agent:"}
                 </span>
                 <a
-                  href={`https://wa.me/51999999999?text=${encodeURIComponent(
+                  href={`https://wa.me/${formattedWhatsAppNumber}?text=${encodeURIComponent(
                     language === "es" 
                       ? "¡Hola! Estuve conversando con Sari Bot y me interesan sus tarifas para destinos locales/nacionales."
                       : "Hi! I was chatting with Sari Bot and I am interested in custom rates."
@@ -2934,6 +3341,226 @@ export default function App() {
           onClose={() => setIsAdminConsoleOpen(false)} 
         />
       )}
+
+      {/* Sleek Admin Login Passcode Modal */}
+      <AnimatePresence>
+        {isLoginModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-[#1a1a1a] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-left text-white"
+            >
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+                <div className="flex items-center gap-2 text-brand-orange">
+                  <Sliders className="w-5 h-5 text-brand-orange animate-pulse" />
+                  <h3 className="font-display font-extrabold text-xs uppercase tracking-wider">
+                    {language === "es" ? "Acceso de Administrador" : "Administrator Sign In"}
+                  </h3>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsLoginModalOpen(false);
+                    setAdminPasswordInput("");
+                    setLoginError("");
+                    setShowRecoveryForm(false);
+                  }}
+                  className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-[11px] text-neutral-400 leading-relaxed font-light mb-4 font-sans">
+                {language === "es" 
+                  ? "Para acceder a las funciones avanzadas como la Consola de Datos y el Diseñador Visual interactivo, confirme su contraseña de administrador."
+                  : "To access administrative capabilities including the Live Console and Builder, please specify your administration passcode."}
+              </p>
+
+              {showRecoveryForm ? (
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-brand-orange uppercase tracking-wider">
+                    {language === "es" ? "Actualizar Contraseña" : "Recover / Update Password"}
+                  </h4>
+                  <p className="text-[11px] text-neutral-400 leading-relaxed font-light font-sans">
+                    {language === "es" 
+                      ? "Ingrese el correo autorizado retabloweb@gmail.com para actualizar la contraseña de administración."
+                      : "Enter the authorized email retabloweb@gmail.com to assign a new administration passcode."}
+                  </p>
+                  <div>
+                    <label className="text-[9px] text-neutral-400 font-bold block uppercase mb-1 tracking-wider">
+                      {language === "es" ? "Correo Autorizado" : "Authorized Email"}
+                    </label>
+                    <input 
+                      type="email"
+                      required
+                      placeholder="e.g. retabloweb@gmail.com"
+                      value={recoveryEmail}
+                      onChange={(e) => setRecoveryEmail(e.target.value)}
+                      className="w-full bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#e12d8a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-neutral-400 font-bold block uppercase mb-1 tracking-wider">
+                      {language === "es" ? "Nueva Contraseña" : "New Passcode"}
+                    </label>
+                    <input 
+                      type="password"
+                      required
+                      placeholder={language === "es" ? "Mínimo 4 caracteres (ej. SisariTravel*2026)" : "Min 4 characters (e.g. SisariTravel*2026)"}
+                      value={newAdminPasswordVal}
+                      onChange={(e) => setNewAdminPasswordVal(e.target.value)}
+                      className="w-full bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-[#e12d8a] font-mono"
+                    />
+                  </div>
+
+                  {loginError && (
+                    <p className="text-red-400 text-[10px] font-bold mt-1.5 transition-all text-left">
+                      ⚠️ {loginError}
+                    </p>
+                  )}
+                  {recoverySuccessMessage && (
+                    <p className="text-green-400 text-[10px] font-bold mt-1.5 transition-all text-left">
+                      ✓ {recoverySuccessMessage}
+                    </p>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowRecoveryForm(false);
+                        setLoginError("");
+                        setRecoverySuccessMessage("");
+                      }}
+                      className="w-1/2 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-[10px] font-bold uppercase transition-all cursor-pointer text-center text-neutral-350"
+                    >
+                      {language === "es" ? "Volver" : "Back"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (recoveryEmail.trim().toLowerCase() !== "retabloweb@gmail.com") {
+                          setLoginError(language === "es" ? "El correo electrónico ingresado no esta autorizado para actualizar contraseña." : "Entered email is not authorized for password recovery.");
+                          setRecoverySuccessMessage("");
+                          return;
+                        }
+                        if (newAdminPasswordVal.trim().length < 4) {
+                          setLoginError(language === "es" ? "La contraseña debe tener mínimo 4 caracteres." : "Passcode must have at least 4 characters.");
+                          setRecoverySuccessMessage("");
+                          return;
+                        }
+                        // Update
+                        const pass = newAdminPasswordVal.trim();
+                        localStorage.setItem("sisari_admin_passcode", pass);
+                        setAdminPasscode(pass);
+                        setLoginError("");
+                        setRecoverySuccessMessage(language === "es" ? "Contraseña actualizada con éxito." : "Passcode updated successfully!");
+                        setTimeout(() => {
+                          setShowRecoveryForm(false);
+                          setRecoverySuccessMessage("");
+                          setRecoveryEmail("");
+                          setNewAdminPasswordVal("");
+                        }, 2000);
+                      }}
+                      className="w-1/2 py-2 rounded-xl bg-brand-orange hover:bg-brand-orange/90 text-white text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer text-center"
+                    >
+                      {language === "es" ? "Guardar" : "Save Changes"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  // Validate against the custom passcode or fallback
+                  const inputVal = adminPasswordInput.trim();
+                  const isMatch = inputVal === adminPasscode || 
+                                  inputVal.toLowerCase() === adminPasscode.toLowerCase() ||
+                                  inputVal === "SisariTravel*2026" ||
+                                  inputVal.toLowerCase() === "sisaritravel*2026";
+
+                  if (isMatch) {
+                    setIsAdmin(true);
+                    localStorage.setItem("sisari_admin_logged", "true");
+                    setIsLoginModalOpen(false);
+                    setAdminPasswordInput("");
+                    setLoginError("");
+                    
+                    // Proceed to action
+                    if (pendingAdminAction === "console") {
+                      setIsAdminConsoleOpen(true);
+                    } else if (pendingAdminAction === "builder") {
+                      setCurrentView("builder");
+                    }
+                  } else {
+                    setLoginError(language === "es" ? "Contraseña incorrecta. Intente de nuevo." : "Incorrect passcode. Please try again.");
+                  }
+                }} className="space-y-4">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 font-bold block uppercase mb-1.5 tracking-wider">
+                      {language === "es" ? "Contraseña de Acceso" : "Access Passcode"}
+                    </label>
+                    <input 
+                      type="password"
+                      autoFocus
+                      required
+                      placeholder={language === "es" ? "Ingrese contraseña de administrador" : "Enter administration passcode"}
+                      value={adminPasswordInput}
+                      onChange={(e) => setAdminPasswordInput(e.target.value)}
+                      className="w-full bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-[#e12d8a] font-mono"
+                    />
+                    {loginError && (
+                      <p className="text-red-400 text-[10px] font-bold mt-1.5 transition-all text-left">
+                        ⚠️ {loginError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowRecoveryForm(true);
+                        setLoginError("");
+                        setAdminPasswordInput("");
+                      }}
+                      className="text-[10px] text-brand-orange hover:underline font-semibold cursor-pointer"
+                    >
+                      {language === "es" ? "¿Olvidó su contraseña / Actualizar?" : "Forgot or update passcode?"}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLoginModalOpen(false);
+                        setAdminPasswordInput("");
+                        setLoginError("");
+                      }}
+                      className="w-1/2 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-[10px] font-bold uppercase transition-all cursor-pointer text-center text-neutral-350"
+                    >
+                      {language === "es" ? "Cancelar" : "Cancel"}
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-1/2 py-2 rounded-xl bg-[#e12d8a] hover:bg-[#e12d8a]/90 text-white text-[10px] font-black uppercase tracking-wider transition-all shadow-md cursor-pointer text-center"
+                    >
+                      {language === "es" ? "Ingresar" : "Login"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

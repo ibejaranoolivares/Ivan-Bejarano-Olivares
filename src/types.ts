@@ -16,11 +16,15 @@ export interface DestinationPackage {
     day: number;
     title: string;
     description: string;
+    dayImage?: string;
   }[];
   faqs: {
     q: string;
     a: string;
   }[];
+  brochurePdfUrl?: string;
+  googleMapEmbedUrl?: string;
+  galleryImages?: string[];
 }
 
 export interface TravelItinerary {
@@ -47,6 +51,19 @@ export interface Testimonial {
   avatarSeed: string;
 }
 
+export interface CMSMenuItem {
+  id: string;
+  labelEs: string;
+  labelEn: string;
+  type: "section" | "custom_page";
+  target: string; // e.g. "inicio", "nosotros", "paquetes", "blog", "contacto", or a custom page id
+  customTitleEs?: string;
+  customTitleEn?: string;
+  customContentEs?: string; // markdown content
+  customContentEn?: string; // markdown content
+  customImage?: string; // custom cover image
+}
+
 export interface ContactFormData {
   name: string;
   email: string;
@@ -54,6 +71,10 @@ export interface ContactFormData {
   destination: string;
   date: string;
   comments: string;
+  passengers?: string;
+  days?: string;
+  adults?: string;
+  children?: string;
 }
 
 export interface BlogPost {
@@ -70,6 +91,7 @@ export interface BlogPost {
   readTimeEs: string;
   readTimeEn: string;
   author: string;
+  active?: boolean;
 }
 
 export interface CMSCertification {
@@ -87,7 +109,24 @@ export interface CMSTeamMember {
   image: string;
 }
 
+export interface CMSHeroSlide {
+  id: string;
+  titleEs: string;
+  titleEn: string;
+  descEs: string;
+  descEn: string;
+  image: string;
+  locationEs: string;
+  locationEn: string;
+  tagEs: string;
+  tagEn: string;
+}
+
 export interface CMSContent {
+  heroSlides?: CMSHeroSlide[];
+  menuItems?: CMSMenuItem[];
+  officeHoursEs?: string;
+  officeHoursEn?: string;
   nosotrosHeadlineEs: string;
   nosotrosHeadlineEn: string;
   nosotrosSubtitleEs: string;
@@ -104,9 +143,21 @@ export interface CMSContent {
   whatsappNumber: string;
   whatsappText: string;
   emails: string[];
+  addressEs?: string;
+  addressEn?: string;
+  addressMapUrl?: string;
+  destinationFormEmail?: string;
+  footerSloganEs?: string;
+  footerSloganEn?: string;
+  footerCopyrightEs?: string;
+  footerCopyrightEn?: string;
+  logoImage?: string;
+  logoFooterImage?: string;
+  secondaryMenuItems?: CMSMenuItem[];
   socialLinks: {
     facebook: string;
     instagram: string;
+    tiktok?: string;
     linkedin: string;
     youtube: string;
   };
@@ -128,6 +179,25 @@ export interface CMSContent {
   misionEn: string;
   visionEs: string;
   visionEn: string;
+
+  // Nosotros details
+  nosotrosValue1TitleEs?: string;
+  nosotrosValue1TitleEn?: string;
+  nosotrosValue1DescEs?: string;
+  nosotrosValue1DescEn?: string;
+  nosotrosValue1Icon?: string;
+
+  nosotrosValue2TitleEs?: string;
+  nosotrosValue2TitleEn?: string;
+  nosotrosValue2DescEs?: string;
+  nosotrosValue2DescEn?: string;
+  nosotrosValue2Icon?: string;
+
+  nosotrosValue3TitleEs?: string;
+  nosotrosValue3TitleEn?: string;
+  nosotrosValue3DescEs?: string;
+  nosotrosValue3DescEn?: string;
+  nosotrosValue3Icon?: string;
 
   // Representative Team (up to 4 members)
   teamMembers: CMSTeamMember[];

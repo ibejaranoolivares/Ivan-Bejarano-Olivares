@@ -370,6 +370,125 @@ export const PACKAGES: DestinationPackage[] = [
       }
     ]
   },
+  {
+    id: "ayacucho-mystic-4d3n",
+    title: "Ayacucho Memorable y Místico",
+    category: "local",
+    location: "Ayacucho, Perú",
+    price: "S/. 420",
+    duration: "4 Días / 3 Noches",
+    difficulty: "Fácil",
+    description: "La experiencia definitiva para descubrir los secretos mejor guardados del sur de los Andes. Un recorrido completo de 4 días por el centro colonial, los templos milenarios de la cultura Wari, el pintoresco pueblo artesanal de Quinua, el espectacular santuario del Obelisco, y el sobrecogedor cañón turquesa de Millpu.",
+    highlights: [
+      "City Tour Histórico y miradores panorámicos de Huamanga",
+      "Visita inolvidable a las piscinas cristalinas de Millpu",
+      "Talleres interactivos con maestros alfareros y retablistas",
+      "Recorrido arqueológico por la gran Capital Pre-Inca Wari"
+    ],
+    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1600&auto=format&fit=crop&q=80",
+    whatsAppText: "¡Hola Sisari! Estoy muy interesado en reservar el paquete completo Ayacucho Memorable y Místico (4 Días / 3 Noches). ¿Me brindan tarifas y fechas disponibles?",
+    inclusions: [
+      "Recojo del terminal terrestre o aeropuerto de Ayacucho",
+      "3 noches de hotel céntrico con desayunos incluidos",
+      "Todos los tours descritos (City Tour, Millpu, Quinua, Wari)",
+      "Guías profesionales certificados y transporte turístico privado",
+      "Todas las entradas oficiales a atractivos, cañones y museos de sitio"
+    ],
+    exclusions: [
+      "Almuerzos libres y cenas no especificadas",
+      "Pasaje aéreo o terrestre interprovincial a Ayacucho"
+    ],
+    itinerary: [
+      {
+        day: 1,
+        title: "Arribo a Huamanga, Bienvenida y City Tour Señorial",
+        description: "Recepción en el aeropuerto o terminal de buses y traslado privado a su hotel seleccionado. A las 2:00 PM iniciamos nuestro City Tour Colonial. Visitaremos la hermosa Plaza Mayor, la Catedral, las iglesias históricas, casonas coloniales de piedra sillar, y visitaremos los famosos talleres de retablismo ayacuchano en el Barrio de Santa Ana."
+      },
+      {
+        day: 2,
+        title: "Día Esmeralda en las Aguas Turquesas de Millpu",
+        description: "A las 8:00 AM partimos hacia Circamarca. Haremos una caminata ecoturística de dificultad baja-moderada para deleitarnos con las pozas y piscinas escalonadas esculpidas en el cañón de piedra blanca. Almuerzo incluido en base de trucha andina fresca en recreo campestre aledaño."
+      },
+      {
+        day: 3,
+        title: "Quinua Alfarera, Ruinas Pre-Inca Wari y Santuario Histórico",
+        description: "Por la mañana, recorreremos la asombrosa ciudad arqueológica de Wari, las tumbas de piedra rústica y sus pasadizos subterráneos. Después, nos trasladaremos al pueblo alfarero de Quinua, viendo sus callecitas con techos de iglesitas de arcilla, y caminaremos por la mítica Pampa de Ayacucho donde se firmó la histórica capitulación."
+      },
+      {
+        day: 4,
+        title: "Mañana de Compras de Artesanías Finas y Despedida",
+        description: "Desayuno en el hotel. Tarde libre para pasear por el mercado andino de Huamanga para comprar deliciosas humitas locales, quesos frescos del día y panes tradicionales chapla de piso. Traslado coordinado privado de retorno al aeropuerto de Ayacucho."
+      }
+    ],
+    faqs: [
+      {
+        q: "¿El recojo del hotel está incluido para todos los tours?",
+        a: "Sí, todos nuestros programas de salidas diarias recogen a los clientes de forma segura directamente desde la puerta de su hotel oficial reservado."
+      }
+    ]
+  },
+  {
+    id: "ayacucho-completo-5d4n",
+    title: "Gran Ruta de Huamanga, Millpu & Vilcashuamán Imperial",
+    category: "local",
+    location: "Ayacucho, Perú",
+    price: "S/. 580",
+    duration: "5 Días / 4 Noches",
+    difficulty: "Moderado",
+    description: "La expedición más completa e imponente por la región de Ayacucho. Abarca todos los tesoros de la capital, las increíbles aguas cristalinas del místico cañón de Millpu, las ruinas andinas de Quinua y Wari, y una inolvidable expedición hasta Vilcashuamán, el santuario inca que custodia el templo del sol y el sagrado pirámide del Ushnu.",
+    highlights: [
+      "Circuito de templos y talleres tradicionales del Retablo Ayacuchano",
+      "Pozas esmeralda de Millpu con espectaculares vistas de mirador",
+      "Visita al Santuario de Vilcashuamán y el Templo Inca del Sol",
+      "Visualización de las monumentales Puyas de Raimondi en su hábitat"
+    ],
+    image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1600&auto=format&fit=crop&q=80",
+    whatsAppText: "¡Hola Sisari! Quisiera cotizar y reservar el paquete Gran Ruta de Huamanga, Millpu & Vilcashuamán Imperial (5 Días / 4 Noches). ¿Qué salidas tienen programadas?",
+    inclusions: [
+      "Traslados completos desde terminal o aeropuerto (Ida y Vuelta)",
+      "4 noches de hotel selecto con desayunos continentales incluidos",
+      "Todos los tours privados descritos con transportes autorizados",
+      "Guías oficiales bilingües y entradas del SERNANP y comunidades locales",
+      "Almuerzos en días seleccionados con delicias locales"
+    ],
+    exclusions: [
+      "Cenas y alimentación extra libre",
+      "Tickets aéreos o buses de larga distancia"
+    ],
+    itinerary: [
+      {
+        day: 1,
+        title: "Arribo e Introducción a la Historia de Ayacucho",
+        description: "Recepción en su punto de ingreso y traslado directo al hotel. A las 2:00 PM realizaremos un recorrido guiado por el místico centro histórico, descubriendo el Templo de Santo Domingo, el barrio de artesanos de Santa Ana con sus retableros declarados patrimonio, y el Mirador de Acuchimay."
+      },
+      {
+        day: 2,
+        title: "Aventura Ecológica a las Aguas Turquesas de Millpu",
+        description: "Viaje temprano hacia Circamarca para explorar el cañón esculpido. Caminaremos bordeando el río para tomar fotografías espectaculares de las piscinas naturales verde esmeralda y el asombroso ojo del agua cristalina. Almuerzo campestre andino incluido."
+      },
+      {
+        day: 3,
+        title: "Historias Pre-Incas en la Ciudadela Wari y Quinua",
+        description: "Excursión de medio día explorando las misteriosas galerías subterráneas sacerdotales de Wari. Continuamos hacia el hermoso pueblo de Quinua para aprender alfarería tradicional andina fina de arcilla. Visita libre por la espectacular llanura histórica de la Pampa de Ayacucho."
+      },
+      {
+        day: 4,
+        title: "Vilcashuamán Imperial, Ushnu y Bosque de Puyas de Raimondi",
+        description: "Expedición hacia el sur andino para visitar el Santuario Inca de Vilcashuamán. Admiraremos el Templo del Sol y la Luna (construido en perfecta mampostería incaica coronada por una iglesia colonial) y el pirámide sagrado del Ushnu. En el camino veremos el bosque de Puyas de Raimondi, las plantas con inflorescencia más grandes del planeta."
+      },
+      {
+        day: 5,
+        title: "Mañana de Huamanguillas y Despedida Artesanal",
+        description: "Desayuno en el hotel. Mañana libre para visitar las tiendas tradicionales del centro histórico ricas en quesos maduros y panes chapla humeantes recién salidos de hornos de leña. A la hora indicada, realizaremos el traslado privado al aeropuerto para su vuelo de retorno."
+      }
+    ],
+    faqs: [
+      {
+        q: "@El tour de Vilcashuamán abarca mucha exigencia física?",
+        a: "La mayor parte del tour se realiza en transporte con caminatas de nivel fácil-intermedio en las ruinas arqueológicas de Vilcashuamán y el Ushnu. Se recomienda mantenerse bien hidratado para la altura de 3,490 msnm."
+      }
+    ]
+  },
 
   // NACIONALES (6 PAQUETES)
   {
@@ -876,7 +995,7 @@ export const TESTIMONIALS: Testimonial[] = [
     comment: "Viajar a Millpu con Sisari Travel fue una experiencia fabulosa. Son súper organizados, se nota que conocen cada rincón de Ayacucho. El almuerzo de trucha fresca estuvo riquísimo y el guía nos ayudó muchísimo en las caminatas de altura. ¡100% recomendados!",
     rating: 5,
     date: "Hace 2 semanas",
-    avatarSeed: "vanessa"
+    avatarSeed: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80"
   },
   {
     name: "Carlos Palomino",
@@ -884,7 +1003,7 @@ export const TESTIMONIALS: Testimonial[] = [
     comment: "Elegimos a Sisari para nuestro viaje familiar a Oxapampa. El chofer fue muy prudente, el guía hablaba perfectamente y el hospedaje excelente. Tienen más de 10 años en el mercado y esa experiencia transmite demasiada confianza.",
     rating: 5,
     date: "Hace 1 mes",
-    avatarSeed: "carlos"
+    avatarSeed: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80"
   },
   {
     name: "Mariana Restrepo",
@@ -892,7 +1011,7 @@ export const TESTIMONIALS: Testimonial[] = [
     comment: "Hicimos con Sisari el paquete de Cusco y Machu Picchu. Todo estuvo coordinado al milímetro: los trenes, los traslados y el hotel. Una agencia de primera categoría instalada en Ayacucho que opera a nivel internacional. Excelente servicio.",
     rating: 5,
     date: "Hace 3 semanas",
-    avatarSeed: "mariana"
+    avatarSeed: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80"
   }
 ];
 

@@ -45,10 +45,102 @@ export const DEFAULT_BLOG_POSTS: BlogPost[] = [
     readTimeEs: "6 min de lectura",
     readTimeEn: "6 min read",
     author: "Dra. Sofía Vílchez"
+  },
+  {
+    id: "blog-sarhua-tablas",
+    titleEs: "El renacer de las Tablas de Sarhua: Arte que narra historias familiares de los Andes",
+    titleEn: "The Rebirth of Sarhua's Painted Boards: Andean Heritage and Familial Art",
+    subtitleEs: "Conoce el fascinante pueblo donde las vigas de madera se convierten en crónicas pintadas de amor y tradición.",
+    subtitleEn: "Meet the charming town where wooden beams represent colored chronicles of custom and familial life.",
+    contentEs: "Las Tablas de Sarhua constituyen una de las manifestaciones pictóricas más singulares de la cordillera andina. Tradicionalmente, cuando una familia construye una nueva casa en el distrito de Sarhua, sus compadres le regalan una viga de madera pintada con las historias y retratos de cada miembro de la familia, coronada por la Virgen del Asunción.\n\nEste arte declarada Patrimonio Cultural de la Nación, no solo es una pieza decorativa, sino un registro genealógico y social dinámico que sobrevive al tiempo. Hoy en día, los talleres locales de Sarhua y en Lima continúan preservando este conocimiento traspasado por generaciones de pintores tradicionales.",
+    contentEn: "The Painted Boards of Sarhua represent one of the most unique folk art heritages across the Andean highlands. By custom, when a family completes a new house roof layout, close friends present a wooden plank painted with the stories, occupations, and custom portraits of each relative.\n\nThis artistic legacy, declared Peruvian National Cultural Heritage, acts as a warm genealogical archive. Now, local ateliers continue protecting the traditional pigments and ancestral stories.",
+    image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80",
+    category: "Cultura",
+    date: "2026-05-24",
+    readTimeEs: "4 min de lectura",
+    readTimeEn: "4 min read",
+    author: "Raimundo Canales"
+  },
+  {
+    id: "blog-vilcashuaman",
+    titleEs: "Vilcashuamán: El glorioso centro administrativo Inca tallado sobre templos Chanca",
+    titleEn: "Vilcashuamán: The Glorious Inca Administrative Hub over Chanca Lands",
+    subtitleEs: "Una guía de viaje imprescindible para caminar por el imponente Ushnu piramidal y el místico Templo del Sol.",
+    subtitleEn: "An essential travel log to climb the majestic pyramidal Ushnu and study the historical Temple of the Sun.",
+    contentEs: "A solo unas horas por carretera pavimentada al sur de Ayacucho se localiza Vilcashuamán, uno de los centros administrativos imperiales incas más imponentes y mejor conservados del país. \n\n### El Ushnu Ceremonial\nEl Ushnu es una pirámide militar incaica de cinco plataformas superpuestas, donde el Inca dirigía rituales sagrados y desfiles. Es considerada la estructura de este tipo más grande de todo el Tahuantinsuyo.\n\n### Templo del Sol y la Luna\nSobre los muros pulidos de piedra caliza del suntuoso templo inca de adoración solar, los conquistadores españoles edificaron la Iglesia de San Juan Bautista, configurando uno de los ejemplos de sincretismo arquitectónico más impactantes del Perú.",
+    contentEn: "Located just a couple of hours away from Ayacucho City is Vilcashuamán, one of the most prominent imperial administrative centers in Peru.\n\n### The Ceremonial Ushnu\nThe Ushnu is a five-tier limestone ceremonial pyramid where the sovereign ruled sacred military procedures. This stands as the largest intact structure of its category in South America.\n\n### Temple of the Sun\nDirectly over the masterfully polished blocks of the Inca worship center, Spanish conquistadors built San Juan Bautista church, completing an astonishing architectural clash.",
+    image: "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=600&auto=format&fit=crop&q=80",
+    category: "Destinos",
+    date: "2026-05-18",
+    readTimeEs: "5 min de lectura",
+    readTimeEn: "5 min read",
+    author: "Mateo Quispe"
+  },
+  {
+    id: "blog-trekking-nevados",
+    titleEs: "Trekking seguro por el Razuhuillca: Consejos para conquistar las alturas de Huanta",
+    titleEn: "High-Altitude Trekking in Razuhuillca: Safety Guidelines for Huanta Peaks",
+    subtitleEs: "Consejos prácticos de aclimatación, equipamiento técnico necesario y rutas de senderismo de lagunas.",
+    subtitleEn: "Practical instructions for oxygen safety, insulation layers, and trekking among neon glacial lakes.",
+    contentEs: "El imponente macizo glaciar del Razuhuillca domina el horizonte de la provincia de Huanta, con picos que rozan los 5,000 metros de altitud. Para los senderistas y amantes de la montaña, este paraje andino ofrece una de las caminatas de montaña más sobrecogedoras del altiplano.\n\n### 1. Las Lagunas de Colores\nA lo largo del recorrido, los glaciares en retroceso alimentan hermosas lagunas de tonos turquesa, esmeralda y plateado. Las más conocidas son Chinchaycocha y Yanacocha.\n\n### 2. Preparación Física y Aclimatación\nNo intentes esta ruta sin haber pasado un mínimo de 48 horas en Ayacucho caminando por zonas templadas. La aclimatación gradual es indispensable para evitar problemas de soroche agudo.\n\n### 3. Contrata Guías Oficiales\nPara caminatas que superen los 4,200 metros sobre el nivel del mar, contar con la pericia de un guía oficial de Sisari Travel provisto de botiquín completo y telecomunicaciones portátiles es de vital importancia.",
+    contentEn: "The majestic glaciar peak of Razuhuillca commands the horizon above Huanta Province, standing near 5,000 meters above sea level (16,400 feet). For passionate backpackers, this represents a unique mountain trail.\n\n### 1. The High Neon Lakes\nAlong the trail, melting snow water fields fill deep turquoise and silver mineral ponds, including iconic Chinchaycocha and Yanacocha.\n\n### 2. High Altitude Safety\nDo not start this intensive hike without staying at least 48 hours for gradual acclimation in Ayacucho or Huanta.\n\n### 3. Seek Certified Outdoor Guides\nFor any hike passing 4,200 meters high, the presence of a certificated leader with medical equipment and satellite tools ensures a safe journey.",
+    image: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=600&auto=format&fit=crop&q=80",
+    category: "Aventura",
+    date: "2026-05-10",
+    readTimeEs: "6 min de lectura",
+    readTimeEn: "6 min read",
+    author: "Russo Gálvez"
   }
 ];
 
 export const DEFAULT_CMS_CONTENT: CMSContent = {
+  officeHoursEs: "Lunes a Sábado: 8:00 AM - 8:30 PM | Domingos: 9:00 AM - 1:00 PM",
+  officeHoursEn: "Monday to Saturday: 8:00 AM - 8:30 PM | Sundays: 9:00 AM - 1:00 PM",
+  menuItems: [
+    { id: "menu_1", labelEs: "Inicio", labelEn: "Home", type: "section", target: "inicio" },
+    { id: "menu_2", labelEs: "Nosotros", labelEn: "About", type: "section", target: "nosotros" },
+    { id: "menu_3", labelEs: "Paquetes", labelEn: "Packages", type: "section", target: "paquetes" },
+    { id: "menu_4", labelEs: "Blog y Noticias", labelEn: "Blog & News", type: "section", target: "blog" },
+    { id: "menu_5", labelEs: "Contacto", labelEn: "Contact", type: "section", target: "contacto" }
+  ],
+  heroSlides: [
+    {
+      id: "slide-millpu",
+      titleEs: "Aguas Turquesas de Millpu",
+      titleEn: "Turquoise Waters of Millpu",
+      descEs: "La deslumbrante joya de Ayacucho. Camina entre cañones de piedra caliza blanca y descubre pozas de agua turquesa de ensueño.",
+      descEn: "The dazzling jewel of Ayacucho. Walk among white limestone canyons and discover dreamy turquoise-green pools.",
+      image: "/src/assets/images/sisari_millpu_hero_1779988973258.png",
+      locationEs: "Ayacucho, Perú",
+      locationEn: "Ayacucho, Peru",
+      tagEs: "JOYA LOCAL",
+      tagEn: "LOCAL GEM"
+    },
+    {
+      id: "slide-machupicchu",
+      titleEs: "Santuario de Machu Picchu",
+      titleEn: "Machu Picchu Sanctuary",
+      descEs: "Explora la mística ciudadela de Cusco, una de las maravillas del mundo moderno, rodeada de fascinantes nubes andinas.",
+      descEn: "Explore the mystical Inca citadel of Cusco, one of the modern wonders of the world, surrounded by highland clouds.",
+      image: "/src/assets/images/sisari_machupicchu_1779988993493.png",
+      locationEs: "Cusco, Perú",
+      locationEn: "Cusco, Peru",
+      tagEs: "MARAVILLA MUNDIAL",
+      tagEn: "WORLD WONDER"
+    },
+    {
+      id: "slide-mexico",
+      titleEs: "Pirámides de Teotihuacán",
+      titleEn: "Teotihuacan Pyramids",
+      descEs: "Conéctate con el esplendor azteca en la colosal Ciudad de los Dioses. Admira las colosales Pirámides del Sol y de la Luna.",
+      descEn: "Tune in with the pre-Columbian grandeur of Mexico. Admire the colossal Pyramids of the Sun and the Moon.",
+      image: "https://images.unsplash.com/photo-1518638150341-f81217277b0d?w=1200&auto=format&fit=crop&q=80",
+      locationEs: "Teotihuacán, México",
+      locationEn: "Teotihuacan, Mexico",
+      tagEs: "HERENCIA HISTÓRICA",
+      tagEn: "HISTORIC HERITAGE"
+    }
+  ],
   nosotrosHeadlineEs: "Diseñamos Viajes con Propósito, Soporte por IA y Autenticidad Humana",
   nosotrosHeadlineEn: "We Design Journeys with Purpose, AI Support & Human Authenticity",
   nosotrosSubtitleEs: "CONOCE EL CORAZÓN DE CECI TRAVEL",
@@ -62,13 +154,29 @@ export const DEFAULT_CMS_CONTENT: CMSContent = {
 
   // Custom Editable Contacts
   phones: ["+51 987 654 321", "+51 981 112 233"],
-  whatsappNumber: "+51987654321",
-  whatsappText: "¡Hola! Quisiera personalizar un paquete turístico con Ceci Travel de forma directa.",
-  emails: ["reservas@cecitravel.pe", "operaciones@cecitravel.pe", "gerencia@cecitravel.pe"],
+  whatsappNumber: "+51980535383",
+  whatsappText: "¡Hola! Quisiera personalizar un paquete turístico con Sisari Travel de forma directa.",
+  emails: ["reservas@sisaritravel.pe", "operaciones@sisaritravel.pe"],
+  addressEs: "Jirón Lima 140, 1ra Cuadra, Ayacucho, Perú",
+  addressEn: "140 Jiron Lima, 1st Block, Ayacucho, Peru",
+  addressMapUrl: "https://maps.google.com/?q=Jiron+Lima+140,+Ayacucho,+Peru",
+  destinationFormEmail: "retabloweb@gmail.com",
+  footerSloganEs: "Su operadora de turismo de confianza en la histórica Ayacucho con más de 10 años promoviendo la alfarería local, el senderismo ético y las memorias familiares por el mundo.",
+  footerSloganEn: "Your trusted tour operator in historic Ayacucho with over 10 years promoting local pottery, ethical trekking, and family memories around the world.",
+  footerCopyrightEs: "Sisari Travel Perú. Todos los derechos reservados.",
+  footerCopyrightEn: "Sisari Travel Peru. All rights reserved.",
+  logoImage: "",
+  logoFooterImage: "",
+  secondaryMenuItems: [
+    { id: "sec_menu_1", labelEs: "🏝️ Paquetes Locales", labelEn: "🏝️ Local Tours", type: "section", target: "local" },
+    { id: "sec_menu_2", labelEs: "⛰️ Paquetes Nacionales", labelEn: "⛰️ National Tours", type: "section", target: "national" },
+    { id: "sec_menu_3", labelEs: "✈️ Paquetes Internacionales", labelEn: "✈️ International Tours", type: "section", target: "international" }
+  ],
   
   socialLinks: {
     facebook: "https://facebook.com/cecitravelperu",
     instagram: "https://instagram.com/cecitravel.pe",
+    tiktok: "https://tiktok.com/@sisaritravel",
     linkedin: "https://linkedin.com/company/ceci-travel",
     youtube: "https://youtube.com/c/cecitravelayacucho",
   },
@@ -97,7 +205,7 @@ export const DEFAULT_CMS_CONTENT: CMSContent = {
       url: "https://canaturperu.org"
     },
     {
-      name: "CETUR",
+      name: "MINCETUR",
       logo: "https://images.unsplash.com/photo-1551836021-d5d88e9218df?w=300&auto=format&fit=crop&q=80",
       url: "https://www.gob.pe/mincetur"
     },
@@ -112,14 +220,34 @@ export const DEFAULT_CMS_CONTENT: CMSContent = {
       url: "https://www.gob.pe/dirceturayacucho"
     },
     {
-      name: "PROMPERÚ",
-      logo: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=300&auto=format&fit=crop&q=80",
+      name: "TripAdvisor",
+      logo: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&auto=format&fit=crop&q=80",
+      url: "https://www.tripadvisor.com"
+    },
+    {
+      name: "APAVIT PERÚ",
+      logo: "https://images.unsplash.com/photo-1500485035595-cbe6f645feb1?w=300&auto=format&fit=crop&q=80",
+      url: "https://apavitperu.org"
+    },
+    {
+      name: "PromPerú",
+      logo: "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?w=300&auto=format&fit=crop&q=80",
       url: "https://www.promperu.gob.pe"
     },
     {
+      name: "IPERÚ",
+      logo: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300&auto=format&fit=crop&q=80",
+      url: "https://www.promperu.gob.pe/iperu"
+    },
+    {
       name: "SERNANP",
-      logo: "https://images.unsplash.com/photo-1500485035595-cbe6f645feb1?w=300&auto=format&fit=crop&q=80",
+      logo: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=300&auto=format&fit=crop&q=80",
       url: "https://www.gob.pe/sernanp"
+    },
+    {
+      name: "UNESCO",
+      logo: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=300&auto=format&fit=crop&q=80",
+      url: "https://unesco.org"
     }
   ],
 
@@ -139,37 +267,56 @@ export const DEFAULT_CMS_CONTENT: CMSContent = {
   teamMembers: [
     {
       name: "Araceli Fernández",
-      titleEs: "Directora General / CEO",
-      titleEn: "Managing Director / CEO",
-      descEs: "Líder apasionada con más de 12 años de liderazgo en proyectos turísticos que enlazan el patrimonio de los andes centrales con alianzas sostenibles y servicios premium.",
-      descEn: "Passionate leader with over 12 years of directive experience in tourism projects aligning central Andean landmarks with global sustainability and premium hospitality.",
+      titleEs: "Gerente de Sisari Travel",
+      titleEn: "Managing Director of Sisari Travel",
+      descEs: "Líder apasionada con más de 12 años de liderazgo en proyectos turísticos que enlazan el patrimonio de los andes centrales con el desarrollo sostenible.",
+      descEn: "Passionate leader with over 12 years of directive experience in tourism projects aligning central Andean landmarks with sustainability first.",
       image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80"
     },
     {
-      name: "Russo Gálvez",
-      titleEs: "Guía Oficial de Turismo",
-      titleEn: "Certified Tour Guide",
-      descEs: "Experto en geografía andina e historia prehispánica de la región de Huamanga. Su entusiasmo y cuidado por el viajero hacen de cada excursión una cátedra viva de cultura.",
-      descEn: "Expert in Andean geography and pre-Hispanic history of the Huamanga region. His enthusiasm and attentive care make every single detail on the route a true living class.",
+      name: "Ruso Gonzales",
+      titleEs: "Guía Oficial 1 / Guía de Turismo",
+      titleEn: "Chief Certified Tour Guide",
+      descEs: "Guía oficial de turismo de Sisari Travel con amplia experiencia en geografía andina e historia de Huamanga y Millpu. Su entusiasmo hace que de cada excursión una cátedra viva de cultura.",
+      descEn: "Official tour guide of Sisari Travel with extensive experience in Andean geography and history of Huamanga and Millpu.",
       image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80"
     },
     {
       name: "Juan Pérez",
-      titleEs: "Guía Oficial de Aventura",
-      titleEn: "Official Adventure Guide",
-      descEs: "Apasionado del montañismo, senderismo y la preservación de caminos andinos antiguos. Conoce los mejores miradores ecológicos y pozas escondidas de Millpu y Sarhua.",
-      descEn: "Full hiker and protector of historical trails. He tracks down the top panoramic points and secret thermal waters, bringing pristine safety to high altitudes.",
+      titleEs: "Responsable de Atención al Cliente",
+      titleEn: "Customer Care & Booking Lead",
+      descEs: "Encargado de canalizar tus consultas, coordinar las reservas y garantizar una atención transparente, rápida y de primer nivel las 24 horas del día.",
+      descEn: "Responsible for managing traveler inquiries, coordinating schedules, and ensuring crystal-clear 24/7 dedicated customer care assistance.",
       image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80"
     },
     {
-      name: "Iván Bejarano",
-      titleEs: "Resp. de Marketing y Comercialización",
-      titleEn: "Marketing & Commercial Representative",
-      descEs: "Diseñador de las estrategias de difusión digital impulsadas por inteligencia artificial de Ceci Travel, garantizando una comunicación transparente y de ágil respuesta.",
-      descEn: "Creator of the digital reach campaigns and smart response networks. Under his leadership, Ceci Travel bridges fast customer inquiries with crystal-clear terms.",
+      name: "Iván Bejarano Olivares",
+      titleEs: "Director de Marketing de Sisari",
+      titleEn: "Chief Marketing Officer",
+      descEs: "Director de marketing a cargo de las estrategias de posicionamiento digital y promoción de turismo receptivo ético impulsadas por herramientas modernas.",
+      descEn: "Chief of marketing responsible for our smart digital reach, and ethical tourism awareness programs.",
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80"
     }
   ],
+
+  // Nosotros customizable cards values
+  nosotrosValue1TitleEs: "Confiabilidad",
+  nosotrosValue1TitleEn: "Reliability",
+  nosotrosValue1DescEs: "Atención humana las 24 horas del día. Cada reserva cuenta con respaldo de pólizas de seguro de viaje de amplia cobertura andina.",
+  nosotrosValue1DescEn: "Dedicated human support 24/7. Every single reservation is backed by leading corporate insurance and localized protocols.",
+  nosotrosValue1Icon: "Shield",
+
+  nosotrosValue2TitleEs: "Puntualidad",
+  nosotrosValue2TitleEn: "Punctuality",
+  nosotrosValue2DescEs: "Consideramos tu valioso tiempo sagrado. Manejamos un riguroso itinerario cronometrado con salidas coordinadas al minuto.",
+  nosotrosValue2DescEn: "We respect your physical timeline immensely. We operate coordinated clockwork routes and professional pick-ups.",
+  nosotrosValue2Icon: "Clock",
+
+  nosotrosValue3TitleEs: "Responsabilidad",
+  nosotrosValue3TitleEn: "Responsibility",
+  nosotrosValue3DescEs: "Turismo ético acreditado. Trabajamos de la mano con cooperativas alfareras y artesanos andinos para redistribuir el ingreso local.",
+  nosotrosValue3DescEn: "Accredited social and environmental programs. We work close with high-altitude local collectives and handcrafters.",
+  nosotrosValue3Icon: "Award",
 
   // Legal Content (Fully editable rich paragraphs for Legalities page)
   legalPrivacyEs: "En Ceci Travel (Ceci Operadora de Turismo Turístico E.I.R.L.), valoramos profundamente tu confianza y privacidad. Nos comprometemos a proteger los datos personales que recopilas al usar nuestro Planificador de Itinerarios por IA o nuestro formulario de reserva. \n\nRecopilamos tu nombre, correo electrónico y número de contacto únicamente para gestionar las cotizaciones, procesar tus comprobantes y coordinar de forma directa las actividades de viaje en Ayacucho. Bajo ninguna circunstancia vendemos o compartimos tus registros con agencias ajenas sin tu consentimiento explícito. Tienes derecho a solicitar el acceso, modificación o retiro de tus datos enviando un email a gerencia@cecitravel.pe.",

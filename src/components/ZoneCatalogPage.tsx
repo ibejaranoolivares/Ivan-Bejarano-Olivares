@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { 
   Clock, 
@@ -18,9 +18,10 @@ interface ZoneCatalogPageProps {
   onBack: () => void;
   onSelectPackage: (pkg: DestinationPackage) => void;
   language: "es" | "en";
+  whatsappNumber?: string;
 }
 
-export default function ZoneCatalogPage({ zone, packages, onBack, onSelectPackage, language }: ZoneCatalogPageProps) {
+export default function ZoneCatalogPage({ zone, packages, onBack, onSelectPackage, language, whatsappNumber }: ZoneCatalogPageProps) {
   // Automatically scroll to the top of the window when the page is loaded
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as any });
@@ -51,7 +52,15 @@ export default function ZoneCatalogPage({ zone, packages, onBack, onSelectPackag
   };
 
   // Filter packages for this specific zone
-  const zonePackages = packages.filter((p) => p.category === zone);
+  const allZonePackages = packages.filter((p) => p.category === zone);
+  // Cap at 12 items
+  const activePackages = allZonePackages.slice(0, 12);
+
+  // Group into chunks of 3 packages each
+  const packageChunks = [];
+  for (let i = 0; i < activePackages.length; i += 3) {
+    packageChunks.push(activePackages.slice(i, i + 3));
+  }
 
   // Helper metadata based on the zone and language
   const zoneMetadata = {
@@ -139,7 +148,7 @@ export default function ZoneCatalogPage({ zone, packages, onBack, onSelectPackag
         <div className="flex flex-col md:flex-row items-center justify-between border-b border-brand-pink/10 pb-6 mb-8 gap-4 text-left">
           <div className="text-left">
             <h2 className="font-display font-extrabold text-[#2c2c2c] text-2xl text-left">
-              {language === "es" ? "Explora todos los" : "Explore all"} {zonePackages.length} {language === "es" ? "destinos disponibles" : "available destinations"}
+              {language === "es" ? "Explora todos los" : "Explore all"} {allZonePackages.length} {language === "es" ? "destinos disponibles" : "available destinations"}
             </h2>
             <p className="text-xs text-brand-charcoal/50 mt-1 text-left">
               {language === "es" 
@@ -149,12 +158,12 @@ export default function ZoneCatalogPage({ zone, packages, onBack, onSelectPackag
             </p>
           </div>
           <span className="bg-brand-pink/5 text-brand-pink font-mono text-xs font-bold px-4 py-2 rounded-xl border border-brand-pink/10 whitespace-nowrap">
-            {language === "es" ? "Catálogo" : "Catalog"}: {zonePackages.length} {language === "es" ? "Paquetes de Sisari" : "Sisari Packages"}
+            {language === "es" ? "Catálogo" : "Catalog"}: {allZonePackages.length} {language === "es" ? "Paquetes de Sisari" : "Sisari Packages"}
           </span>
         </div>
 
         {/* Core dynamic responsive package catalog grid */}
-        {zonePackages.length === 0 ? (
+        {activePackages.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-brand-pink/5 shadow-sm max-w-md mx-auto">
             <HelpCircle className="w-12 h-12 text-brand-orange/40 mx-auto mb-3" />
             <p className="font-display font-bold text-brand-charcoal">
@@ -168,102 +177,120 @@ export default function ZoneCatalogPage({ zone, packages, onBack, onSelectPackag
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {zonePackages.map((pkg) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-                key={pkg.id}
-                className="bg-white rounded-3xl overflow-hidden border border-brand-pink/5 hover:border-brand-pink/25 hover:shadow-xl transition-all flex flex-col h-full group"
-              >
-                <div 
-                  onClick={() => onSelectPackage(pkg)}
-                  className="relative overflow-hidden aspect-[4/3] cursor-pointer"
-                >
-                  <img 
-                    src={pkg.image} 
-                    alt={pkg.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute top-4 left-4 bg-brand-charcoal/80 backdrop-blur-md text-white font-semibold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">
-                    {pkg.location}
-                  </div>
-                  {pkg.category === 'local' && (
-                    <div className="absolute top-4 right-4 bg-brand-pink text-white font-extrabold text-[9px] tracking-widest uppercase px-2 py-1 rounded-md shadow-sm">
-                      {t.favoritoLocal}
-                    </div>
-                  )}
+          <div className="space-y-16">
+            {packageChunks.map((chunk, chunkIdx) => (
+              <div key={chunkIdx} className="space-y-8">
+                {/* Section header dividing chunks of 3 */}
+                <div className="flex items-center gap-4">
+                  <div className="h-[1px] bg-gradient-to-r from-transparent to-brand-pink/15 flex-grow" />
+                  <span className="text-[9px] font-mono font-bold text-brand-pink uppercase tracking-widest bg-brand-pink/5 border border-brand-pink/10 px-3 py-1 rounded-full">
+                    {language === "es" 
+                      ? `Sección ${chunkIdx + 1} de 3 Paquetes` 
+                      : `Section ${chunkIdx + 1} of 3 Packages`
+                    }
+                  </span>
+                  <div className="h-[1px] bg-gradient-to-l from-transparent to-brand-pink/15 flex-grow" />
                 </div>
 
-                <div className="p-6 flex flex-col flex-grow gap-4 text-left">
-                  <div className="flex items-center justify-between text-xs text-brand-charcoal/60 font-medium w-full">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-brand-pink" />
-                      {translateDuration(pkg.duration)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Compass className="w-3.5 h-3.5 text-brand-orange" />
-                      {t.dificultad}: {translateDifficulty(pkg.difficulty)}
-                    </span>
-                  </div>
-
-                  <h4 
-                    onClick={() => onSelectPackage(pkg)}
-                    className="font-display font-bold text-xl text-brand-charcoal hover:text-brand-pink transition-colors leading-tight cursor-pointer text-left scroll-my-1"
-                  >
-                    {pkg.title}
-                  </h4>
-
-                  <p className="text-sm text-brand-charcoal/70 leading-relaxed font-light line-clamp-3 text-left">
-                    {pkg.description}
-                  </p>
-
-                  {/* Highlights Bullet List */}
-                  <div className="border-t border-brand-pink/5 pt-4 text-left w-full">
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#f58220] font-bold mb-2 text-left">
-                      {t.loDestacadoViaje}
-                    </p>
-                    <ul className="text-xs text-brand-charcoal/80 flex flex-col gap-1 w-full text-left">
-                      {pkg.highlights.slice(0, 3).map((hlt, idx) => (
-                        <li key={idx} className="flex items-start gap-1.5 leading-tight text-left">
-                          <Check className="w-3.5 h-3.5 text-brand-pink shrink-0 mt-0.5" />
-                          <span>{hlt}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Price and Action Buttons */}
-                  <div className="border-t border-brand-pink/5 pt-4 mt-auto flex items-center justify-between w-full">
-                    <div className="text-left">
-                      <p className="text-[10px] text-brand-charcoal/50 leading-none">{t.desdeTodoIncluido}</p>
-                      <p className="text-xl font-display font-extrabold text-brand-charcoal mt-1 text-left">
-                        {pkg.price}
-                      </p>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <a 
-                        href={`https://wa.me/51999999999?text=${encodeURIComponent(pkg.whatsAppText)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
-                        title={language === "es" ? "Consultar por WhatsApp" : "Inquire via WhatsApp"}
-                      >
-                        <Phone className="w-4 h-4 fill-white text-green-500" />
-                      </a>
-                      <button 
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {chunk.map((pkg) => (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.35, delay: chunk.indexOf(pkg) * 0.05 }}
+                      key={pkg.id}
+                      className="bg-white rounded-3xl overflow-hidden border border-brand-pink/5 hover:border-brand-pink/25 hover:shadow-xl transition-all flex flex-col h-full group"
+                    >
+                      <div 
                         onClick={() => onSelectPackage(pkg)}
-                        className="bg-brand-pink text-white hover:bg-brand-pink/90 active:scale-95 text-xs font-bold px-4 py-2.5 rounded-xl block shadow-sm transition-all cursor-pointer"
+                        className="relative overflow-hidden aspect-[4/3] cursor-pointer"
                       >
-                        {t.verDetalle}
-                      </button>
-                    </div>
-                  </div>
+                        <img 
+                          src={pkg.image} 
+                          alt={pkg.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute top-4 left-4 bg-brand-charcoal/80 backdrop-blur-md text-white font-semibold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">
+                          {pkg.location}
+                        </div>
+                        {pkg.category === 'local' && (
+                          <div className="absolute top-4 right-4 bg-brand-pink text-white font-extrabold text-[9px] tracking-widest uppercase px-2 py-1 rounded-md shadow-sm">
+                            {t.favoritoLocal}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-6 flex flex-col flex-grow gap-4 text-left">
+                        <div className="flex items-center justify-between text-xs text-brand-charcoal/60 font-medium w-full">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-brand-pink" />
+                            {translateDuration(pkg.duration)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Compass className="w-3.5 h-3.5 text-brand-orange" />
+                            {t.dificultad}: {translateDifficulty(pkg.difficulty)}
+                          </span>
+                        </div>
+
+                        <h4 
+                          onClick={() => onSelectPackage(pkg)}
+                          className="font-display font-bold text-xl text-brand-charcoal hover:text-brand-pink transition-colors leading-tight cursor-pointer text-left scroll-my-1"
+                        >
+                          {pkg.title}
+                        </h4>
+
+                        <p className="text-sm text-brand-charcoal/70 leading-relaxed font-light line-clamp-3 text-left">
+                          {pkg.description}
+                        </p>
+
+                        {/* Highlights Bullet List */}
+                        <div className="border-t border-brand-pink/5 pt-4 text-left w-full">
+                          <p className="text-[10px] font-mono uppercase tracking-widest text-[#f58220] font-bold mb-2 text-left">
+                            {t.loDestacadoViaje}
+                          </p>
+                          <ul className="text-xs text-brand-charcoal/80 flex flex-col gap-1 w-full text-left">
+                            {pkg.highlights.slice(0, 3).map((hlt, idx) => (
+                              <li key={idx} className="flex items-start gap-1.5 leading-tight text-left">
+                                <Check className="w-3.5 h-3.5 text-brand-pink shrink-0 mt-0.5" />
+                                <span>{hlt}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Price and Action Buttons */}
+                        <div className="border-t border-brand-pink/5 pt-4 mt-auto flex items-center justify-between w-full">
+                          <div className="text-left">
+                            <p className="text-[10px] text-brand-charcoal/50 leading-none">{t.desdeTodoIncluido}</p>
+                            <p className="text-xl font-display font-extrabold text-brand-charcoal mt-1 text-left">
+                              {pkg.price}
+                            </p>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <a 
+                              href={`https://wa.me/${whatsappNumber ? whatsappNumber.replace(/\D/g, "") : "51999999999"}?text=${encodeURIComponent(pkg.whatsAppText)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-green-500 hover:bg-green-600 active:scale-95 text-white p-2.5 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
+                              title={language === "es" ? "Consultar por WhatsApp" : "Inquire via WhatsApp"}
+                            >
+                              <Phone className="w-4 h-4 fill-white text-green-500" />
+                            </a>
+                            <button 
+                              onClick={() => onSelectPackage(pkg)}
+                              className="bg-brand-pink text-white hover:bg-brand-pink/90 active:scale-95 text-xs font-bold px-4 py-2.5 rounded-xl block shadow-sm transition-all cursor-pointer"
+                            >
+                              {t.verDetalle}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}

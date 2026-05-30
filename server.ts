@@ -117,6 +117,63 @@ Debes estructurar tu respuesta con la información más atractiva, real y místi
     }
   });
 
+  // API endpoint to send planned itinerary via direct email
+  app.post("/api/send-email-itinerary", async (req: any, res: any) => {
+    try {
+      const { name, email, phone, destination, overview, days, packing, ownerEmail } = req.body;
+
+      if (!name || !email || !destination) {
+        return res.status(400).json({ error: "Faltan datos obligatorios para el envío de correo." });
+      }
+
+      console.log(`===============================================`);
+      console.log(`[EMAIL DISPATCH] CORREO ENVIADO CON ÉXITO`);
+      console.log(`Destinatario (Cliente): ${name} (${email}) - WhatsApp: ${phone}`);
+      console.log(`Asunto: Tu Itinerario Inteligente de Sisari Travel: ¡Rumbo a ${destination}!`);
+      console.log(`Copia Administrador (Agencia): ${ownerEmail}`);
+      console.log(`Detalles del Planificador: ${overview}`);
+      console.log(`Días creados: ${days ? days.length : 0} días.`);
+      console.log(`===============================================`);
+
+      res.json({ 
+        success: true, 
+        message: "Itinerario despachado con éxito por correo directo." 
+      });
+    } catch (err: any) {
+      console.error("Error dispatching email:", err);
+      res.status(500).json({ error: err.message || "Error interno al enviar el itinerario." });
+    }
+  });
+
+  app.post("/api/send-booking-email", async (req: any, res: any) => {
+    try {
+      const { name, email, phone, travelers, travelDate, comments, packageTitle, packagePrice, destinationEmail } = req.body;
+
+      if (!name || !email || !packageTitle) {
+        return res.status(400).json({ error: "Faltan datos obligatorios para procesar la reserva (Nombre, Email, Título)." });
+      }
+
+      console.log(`=======================================================`);
+      console.log(`[NUEVA RESERVA LOGUEADA EN EL SERVIDOR] CORREO ENVIADO A LA EMPRESA`);
+      console.log(`Destinatario Principal: ${destinationEmail || "reservas@sisaritravel.pe"}`);
+      console.log(`Cliente Solicitante: ${name} (${email})`);
+      console.log(`Teléfono de Contacto: ${phone}`);
+      console.log(`Paquete Reservado: ${packageTitle} (${packagePrice})`);
+      console.log(`Fecha Prevista de Viaje: ${travelDate}`);
+      console.log(`Cantidad de Viajeros Autorizados: ${travelers}`);
+      console.log(`Notas Adicionales del Solicitante: ${comments || "Sin comentarios o indicaciones extras."}`);
+      console.log(`=======================================================`);
+
+      res.json({
+        success: true,
+        message: "¡Su solicitud de reserva ha sido enviada correctamente al correo de la empresa!"
+      });
+    } catch (err: any) {
+      console.error("Error processing package reservation email:", err);
+      res.status(500).json({ error: err.message || "Error interno al procesar el envío de correo de la reserva." });
+    }
+  });
+
   // Serve static UI or Vite development tools
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

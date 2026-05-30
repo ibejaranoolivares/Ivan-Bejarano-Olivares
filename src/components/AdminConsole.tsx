@@ -27,7 +27,10 @@ import {
   FileEdit,
   Sliders,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  FolderOpen,
+  Layout,
+  Upload
 } from "lucide-react";
 import { DestinationPackage, BlogPost, CMSContent, BotConfig, CRMLead, BotPresetItem } from "../types";
 import { PACKAGES } from "../data";
@@ -76,8 +79,9 @@ export default function AdminConsole({
   onClose 
 }: AdminConsoleProps) {
   
-  // Navigation Tabs for Admin Console
-  const [activeTab, setActiveTab] = useState<"packages" | "blog" | "cms" | "bot" | "crm">("packages");
+  // Navigation Tabs for Admin Console - Reorganized by Pages
+  const [activeTab, setActiveTab ] = useState<"paginas" | "menus" | "crm" | "bot" | "reservaciones" | "paquetes" | "noticias" | "contactos" | "multimedia">("paginas");
+  const [paginasSubTab, setPaginasSubTab] = useState<"inicio" | "nosotros" | "paquetes" | "blog" | "contacto" | "reservar" | "custom">("inicio");
   
   const [searchTerm, setSearchTerm] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -104,6 +108,28 @@ export default function AdminConsole({
   const [pWhatsAppText, setPWhatsAppText] = useState("");
   const [pInclusionsText, setPInclusionsText] = useState("");
   const [pExclusionsText, setPExclusionsText] = useState("");
+  const [pItineraryText, setPItineraryText] = useState("");
+  const [pItineraryDays, setPItineraryDays] = useState<{ day: number; title: string; description: string; dayImage?: string }[]>([{ day: 1, title: "", description: "", dayImage: "" }]);
+  const [pGalleryImages, setPGalleryImages] = useState<string[]>([]);
+  const [pBrochurePdfUrl, setPBrochurePdfUrl] = useState("");
+  const [pGoogleMapEmbedUrl, setPGoogleMapEmbedUrl] = useState("");
+
+  const [mediaUploads, setMediaUploads] = useState<{ id: string; name: string; type: string; size: string; content: string; date: string }[]>(() => {
+    try {
+      const saved = localStorage.getItem("sisari_media_uploads");
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return [
+      { id: "millpu_pdf", name: "Folleto_Turistico_Millpu_Ayacucho.pdf", type: "application/pdf", size: "385 KB", content: "data:application/pdf;base64,JVBER...", date: "2026-05-29" },
+      { id: "ayacucho_png", name: "ayacucho_colonial_plaza.png", type: "image/png", size: "150 KB", content: "https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?w=600&auto=format&fit=crop&q=80", date: "2026-05-28" }
+    ];
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem("sisari_media_uploads", JSON.stringify(mediaUploads));
+  }, [mediaUploads]);
 
   const resetPackageForm = () => {
     setPId("");
@@ -119,6 +145,11 @@ export default function AdminConsole({
     setPWhatsAppText("");
     setPInclusionsText("");
     setPExclusionsText("");
+    setPItineraryText("");
+    setPItineraryDays([{ day: 1, title: "Día 1: Inicio de Aventura", description: "Recepción y traslado", dayImage: "" }]);
+    setPGalleryImages([]);
+    setPBrochurePdfUrl("");
+    setPGoogleMapEmbedUrl("");
     setErrorMsg(null);
   };
 
@@ -139,6 +170,13 @@ export default function AdminConsole({
     setPWhatsAppText(pkg.whatsAppText || "");
     setPInclusionsText(pkg.inclusions ? pkg.inclusions.join("\n") : "");
     setPExclusionsText(pkg.exclusions ? pkg.exclusions.join("\n") : "");
+    setPItineraryText(pkg.itinerary ? pkg.itinerary.map(it => `${it.title} | ${it.description}`).join("\n") : "");
+    setPItineraryDays(pkg.itinerary && pkg.itinerary.length > 0 
+      ? pkg.itinerary.map(it => ({ day: it.day, title: it.title, description: it.description, dayImage: it.dayImage || "" })) 
+      : [{ day: 1, title: "Día 1: Inicio", description: "", dayImage: "" }]);
+    setPGalleryImages(pkg.galleryImages || []);
+    setPBrochurePdfUrl(pkg.brochurePdfUrl || "");
+    setPGoogleMapEmbedUrl(pkg.googleMapEmbedUrl || "");
     setErrorMsg(null);
   };
 
@@ -164,6 +202,24 @@ export default function AdminConsole({
 
     const finalWhatsAppText = pWhatsAppText.trim() || `¡Hola! Me gustaría consultar por el paquete ${pTitle} de Sisari Travel.`;
 
+    const cleanItinerary = pItineraryDays
+      .map((item, idx) => ({
+        day: idx + 1,
+        title: item.title.trim() || `Día ${idx + 1}`,
+        description: item.description.trim(),
+        dayImage: item.dayImage || ""
+      }))
+      .filter(item => item.description.length > 0);
+
+    const parsedItinerary = cleanItinerary.length > 0 ? cleanItinerary : (editingPackage?.itinerary || [
+      {
+        day: 1,
+        title: "Inicio y aventura espectacular guiada",
+        description: `Recorrido para explorar las maravillas de ${pTitle.trim()} con asistencia local.`,
+        dayImage: ""
+      }
+    ]);
+
     const updatedPkg: DestinationPackage = {
       id: pId,
       title: pTitle.trim(),
@@ -178,16 +234,13 @@ export default function AdminConsole({
       whatsAppText: finalWhatsAppText,
       inclusions: parsedInclusions.length > 0 ? parsedInclusions : ["Transporte turístico", "Guía profesional"],
       exclusions: parsedExclusions.length > 0 ? parsedExclusions : ["Souvenirs", "Gastos personales"],
-      itinerary: editingPackage?.itinerary || [
-        {
-          day: 1,
-          title: "Inicio y aventura espectacular guiada",
-          description: `Recorrido para explorar las maravillas de ${pTitle.trim()} con asistencia local.`
-        }
-      ],
+      itinerary: parsedItinerary,
       faqs: editingPackage?.faqs || [
         { q: "¿Qué debo vestir?", a: "Recomendamos ropa cómoda y zapatillas antideslizantes." }
-      ]
+      ],
+      brochurePdfUrl: pBrochurePdfUrl.trim() || undefined,
+      googleMapEmbedUrl: pGoogleMapEmbedUrl.trim() || undefined,
+      galleryImages: pGalleryImages
     };
 
     let newPackagesList: DestinationPackage[] = [];
@@ -453,6 +506,92 @@ export default function AdminConsole({
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = ["ID", "Origen", "Nombre", "Telefono", "Email", "Fecha Creacion", "Destino", "Fecha Viaje", "Comentarios", "Estado", "Notas"];
+    const rows = filteredLeads.map(lead => [
+      lead.id,
+      lead.source,
+      lead.name,
+      lead.phone,
+      lead.email,
+      lead.dateCreated,
+      lead.destination,
+      lead.travelDate || "",
+      lead.comments || "",
+      lead.status,
+      lead.notes || ""
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `CRM_Leads_Sisari_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePrintCRM = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return alert("Por favor permita las ventanas emergentes en su navegador.");
+    
+    const leadsHTML = filteredLeads.map(lead => `
+      <tr style="border-bottom: 1px solid #ddd;">
+        <td style="padding: 10px; font-size: 11px;">${lead.name}</td>
+        <td style="padding: 10px; font-size: 11px;">${lead.phone}</td>
+        <td style="padding: 10px; font-size: 11px;">${lead.email}</td>
+        <td style="padding: 10px; font-size: 11px;">${lead.destination}</td>
+        <td style="padding: 10px; font-size: 11px;">${lead.travelDate || '-'}</td>
+        <td style="padding: 10px; font-size: 11px;">${lead.status}</td>
+        <td style="padding: 10px; font-size: 11px;">${lead.source}</td>
+        <td style="padding: 10px; font-size: 11px;">${lead.comments || '-'}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>CRM - Leads Sisari Travel</title>
+          <style>
+            body { font-family: sans-serif; padding: 25px; color: #2c2c2c; }
+            table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+            th { background: #f2f2f2; text-align: left; padding: 10px; font-size: 11px; font-weight: bold; }
+            h2 { color: #e12d8a; margin-bottom: 5px; }
+            .meta { font-size: 11px; color: #666; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <h2>Reporte de CRM Sisari Travel</h2>
+          <div class="meta">Fecha de reporte generado: ${new Date().toLocaleString()} | Filtrados: ${filteredLeads.length} de ${crmLeads.length} leads</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Destino</th>
+                <th>Fecha Viaje</th>
+                <th>Estado</th>
+                <th>Origen</th>
+                <th>Comentarios</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${leadsHTML}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // Utility helpers
   const showSuccessToast = (msg: string) => {
     setSuccessMsg(msg);
@@ -525,57 +664,40 @@ export default function AdminConsole({
           </div>
         )}
 
-        {/* NAVIGATION TAB CONTROLLERS */}
-        <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-2 shrink-0 flex gap-2 overflow-x-auto no-scrollbar">
+        {/* NAVIGATION TAB CONTROLLERS - REORGANIZED PORTALS */}
+        <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-2.5 shrink-0 flex gap-2 overflow-x-auto no-scrollbar">
           <button 
-            onClick={() => { setActiveTab("packages"); setSearchTerm(""); }}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 ${
-              activeTab === "packages" ? "bg-white text-brand-pink shadow-xs border-b-2 border-brand-pink" : "hover:bg-neutral-100 text-neutral-600"
+            type="button"
+            onClick={() => { setActiveTab("paginas"); setPaginasSubTab("inicio"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "paginas" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
             }`}
           >
-            <Compass className="w-4 h-4 shrink-0" />
-            <span>📦 Paquetes ({packages.length})</span>
+            <Layout className="w-3.5 h-3.5 shrink-0" />
+            <span>🖥️ Páginas</span>
           </button>
 
           <button 
-            onClick={() => { setActiveTab("blog"); setSearchTerm(""); }}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 ${
-              activeTab === "blog" ? "bg-white text-brand-pink shadow-xs border-b-2 border-brand-pink" : "hover:bg-neutral-100 text-neutral-600"
+            type="button"
+            onClick={() => { setActiveTab("menus"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "menus" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
             }`}
           >
-            <BookOpen className="w-4 h-4 shrink-0 text-amber-500" />
-            <span>✍️ Blog y Noticias ({blogPosts.length})</span>
+            <Sliders className="w-3.5 h-3.5 shrink-0 text-cyan-600" />
+            <span>⚙️ Menús</span>
           </button>
 
           <button 
-            onClick={() => { setActiveTab("cms"); setSearchTerm(""); }}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 ${
-              activeTab === "cms" ? "bg-white text-brand-pink shadow-xs border-b-2 border-brand-pink" : "hover:bg-neutral-100 text-neutral-600"
-            }`}
-          >
-            <FileEdit className="w-4 h-4 shrink-0 text-cyan-600" />
-            <span>💻 CMS de Páginas</span>
-          </button>
-
-          <button 
-            onClick={() => { setActiveTab("bot"); setSearchTerm(""); }}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 ${
-              activeTab === "bot" ? "bg-white text-brand-pink shadow-xs border-b-2 border-brand-pink" : "hover:bg-neutral-100 text-neutral-600"
-            }`}
-          >
-            <Bot className="w-4 h-4 shrink-0 text-purple-600" />
-            <span>🤖 Respuestas Bot ({botForm.presets.length})</span>
-          </button>
-
-          <button 
+            type="button"
             onClick={() => { setActiveTab("crm"); setSearchTerm(""); }}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 ${
-              activeTab === "crm" ? "bg-white text-brand-pink shadow-xs border-b-2 border-brand-pink" : "hover:bg-neutral-100 text-neutral-600"
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "crm" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-200"
             }`}
           >
-            <Users className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
+            <Users className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
             <span className="flex items-center gap-1.5">
-              📊 CRM de Clientes
+              📊 CRM
               {crmLeads.filter(l => l.status === "Nuevo").length > 0 && (
                 <span className="bg-red-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full animate-pulse leading-none">
                   {crmLeads.filter(l => l.status === "Nuevo").length}
@@ -583,15 +705,130 @@ export default function AdminConsole({
               )}
             </span>
           </button>
+
+          <button 
+            type="button"
+            onClick={() => { setActiveTab("bot"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "bot" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5 shrink-0 text-purple-600" />
+            <span>🤖 Bot</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => { setActiveTab("reservaciones"); setPaginasSubTab("reservar"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "reservaciones" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
+            <span>🛎️ Reservaciones</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => { setActiveTab("paquetes"); setPaginasSubTab("paquetes"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "paquetes" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5 shrink-0 text-teal-500" />
+            <span>📦 Paquetes</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => { setActiveTab("noticias"); setPaginasSubTab("blog"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "noticias" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5 shrink-0 text-pink-500" />
+            <span>✍️ Noticias</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => { setActiveTab("contactos"); setPaginasSubTab("contacto"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "contactos" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+            <span>📞 Contactos</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => { setActiveTab("multimedia"); setSearchTerm(""); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide gap-1.5 transition-all flex items-center shrink-0 cursor-pointer border ${
+              activeTab === "multimedia" ? "bg-brand-pink text-white border-brand-pink shadow-xs" : "bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200"
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+            <span>📁 Multimedia</span>
+          </button>
         </div>
 
         {/* WORKSPACE AREA COMPONENTS */}
         <div className="flex-1 flex overflow-hidden min-h-0">
-          
+
+          {/* Left panel Subtab Sidebar - Page Directory selection */}
+          {activeTab === "paginas" && (
+            <div className="w-full md:w-3/12 border-r border-brand-pink/10 bg-neutral-50/50 p-4.5 flex flex-col gap-2.5 overflow-y-auto shrink-0 no-scrollbar">
+              <span className="text-[9px] uppercase font-black text-neutral-400 tracking-wider block mb-1 font-mono">PÁGINAS DEL PORTAL</span>
+              
+              <button
+                type="button"
+                onClick={() => setPaginasSubTab("inicio")}
+                className={`p-3.5 rounded-2xl border text-left cursor-pointer font-extrabold flex items-center gap-3 transition-all outline-none ${
+                  paginasSubTab === "inicio" ? "bg-brand-pink text-white border-brand-pink shadow-md" : "bg-white border-neutral-150 hover:bg-neutral-100 text-neutral-700"
+                }`}
+              >
+                <span className="text-base">🏠</span>
+                <div className="leading-tight text-left">
+                  <p className="text-[11.5px] font-extrabold uppercase tracking-wide">Página de Inicio</p>
+                  <p className={`text-[8.5px] font-normal leading-normal ${paginasSubTab === "inicio" ? "text-white/80" : "text-neutral-400"}`}>Banners, marcas, slides</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaginasSubTab("nosotros")}
+                className={`p-3.5 rounded-2xl border text-left cursor-pointer font-extrabold flex items-center gap-3 transition-all outline-none ${
+                  paginasSubTab === "nosotros" ? "bg-brand-pink text-white border-brand-pink shadow-md" : "bg-white border-neutral-150 hover:bg-neutral-100 text-neutral-700"
+                }`}
+              >
+                <span className="text-base">👥</span>
+                <div className="leading-tight text-left">
+                  <p className="text-[11.5px] font-extrabold uppercase tracking-wide">Quienes Somos</p>
+                  <p className={`text-[8.5px] font-normal leading-normal ${paginasSubTab === "nosotros" ? "text-white/80" : "text-neutral-400"}`}>Misión, visión, personal</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaginasSubTab("custom")}
+                className={`p-3.5 rounded-2xl border text-left cursor-pointer font-extrabold flex items-center gap-3 transition-all outline-none ${
+                  paginasSubTab === "custom" ? "bg-brand-pink text-white border-brand-pink shadow-md" : "bg-white border-neutral-150 hover:bg-neutral-100 text-neutral-700"
+                }`}
+              >
+                <span className="text-base">🗺️</span>
+                <div className="leading-tight text-left">
+                  <p className="text-[11.5px] font-extrabold uppercase tracking-wide">Páginas Creadas</p>
+                  <p className={`text-[8.5px] font-normal leading-normal ${paginasSubTab === "custom" ? "text-white/80" : "text-neutral-400"}`}>Administrar páginas propias</p>
+                </div>
+              </button>
+            </div>
+          )}
+
           {/* ==================================================================== */}
           {/* TAB 1: PACKAGES CATALOG MANAGER */}
           {/* ==================================================================== */}
-          {activeTab === "packages" && (
+          {(activeTab === "paquetes" || (activeTab === "paginas" && paginasSubTab === "paquetes")) && (
             <div className="flex-1 flex overflow-hidden w-full">
               {/* Left Column list */}
               <div className="w-full md:w-5/12 border-r border-[#eaeaea] flex flex-col bg-[#faf9f8] overflow-hidden">
@@ -823,20 +1060,43 @@ export default function AdminConsole({
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="font-black text-neutral-700">Imagen de Portada (URL)</label>
-                        <input
-                          type="text"
-                          value={pImage}
-                          onChange={(e) => setPImage(e.target.value)}
-                          placeholder="https://images.unsplash.com/..."
-                          className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:ring-1 focus:ring-brand-pink outline-none"
-                        />
+                        <label className="font-black text-neutral-700">Imagen de Portada (URL o Subida)</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={pImage}
+                            onChange={(e) => setPImage(e.target.value)}
+                            placeholder="https://images.unsplash.com/..."
+                            className="flex-1 px-3 py-2 border border-neutral-200 rounded-xl focus:ring-1 focus:ring-brand-pink outline-none text-xs"
+                          />
+                          <label className="bg-brand-pink hover:bg-brand-orange text-white text-[10px] font-bold px-3 py-2 rounded-xl cursor-pointer transition-all shrink-0 flex items-center justify-center gap-1 active:scale-95">
+                            <span>📷 Subir Imagen</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    if (typeof reader.result === 'string') {
+                                      setPImage(reader.result);
+                                      showSuccessToast("¡Imagen cargada correctamente!");
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
 
                     <div className="space-y-1">
                       <label className="font-black text-neutral-700 font-mono block">O elige de la galería prediseñada:</label>
-                      <div className="flex flex-wrap gap-1.5 p-2 bg-neutral-50 rounded-xl max-h-16 overflow-y-auto border border-neutral-100">
+                      <div className="flex flex-wrap gap-1.5 p-2 bg-neutral-50 rounded-xl max-h-16 overflow-y-auto border border-neutral-100 font-sans">
                         {PRESET_IMAGES.map((pr, i) => (
                           <button
                             key={i}
@@ -852,7 +1112,76 @@ export default function AdminConsole({
                       </div>
                     </div>
 
-                    <div className="space-y-1">
+                    {/* Secondary Gallery Images */}
+                    <div className="space-y-2.5 p-4 bg-purple-50/40 border border-purple-100 rounded-2xl text-left">
+                      <span className="text-[10px] uppercase font-black text-purple-700 block">✨ Fotos Secundarias / Galería del Paquete ({pGalleryImages.length})</span>
+                      <p className="text-[9px] text-neutral-500">Agrega fotos adicionales para construir una landing page altamente atractiva y visualmente optimizada.</p>
+                      
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <label className="bg-purple-700 hover:bg-purple-800 text-white text-[9px] font-black px-3 py-2 rounded-xl cursor-pointer transition-all flex items-center gap-1 active:scale-95 uppercase tracking-wider">
+                          <span>➕ Subir Fotos Secundarias</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              const files = e.target.files;
+                              if (files && files.length > 0) {
+                                Array.from(files).forEach((file: File) => {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    if (typeof reader.result === 'string') {
+                                      setPGalleryImages(prev => [...prev, reader.result as string]);
+                                      showSuccessToast("¡Foto añadida a la galería con éxito!");
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                });
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        
+                        <div className="flex-1 flex gap-1.5 items-center">
+                          <input 
+                            type="text"
+                            placeholder="O pega URL de foto externa y pulsa Enter..."
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const url = (e.currentTarget as HTMLInputElement).value.trim();
+                                if (url) {
+                                  setPGalleryImages(prev => [...prev, url]);
+                                  (e.currentTarget as HTMLInputElement).value = "";
+                                  showSuccessToast("¡Se agregó la URL externa!");
+                                }
+                              }
+                            }}
+                            className="w-full px-2.5 py-1.5 text-[11px] border border-neutral-200 bg-white rounded-lg outline-none focus:ring-1 focus:ring-purple-600 font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      {pGalleryImages.length > 0 && (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-2 bg-white p-2.5 rounded-xl border border-neutral-100 max-h-24 overflow-y-auto">
+                          {pGalleryImages.map((img, idx) => (
+                            <div key={idx} className="relative group w-12 h-12 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100 shrink-0">
+                              <img src={img} className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => setPGalleryImages(prev => prev.filter((_, i) => i !== idx))}
+                                className="absolute inset-0 bg-red-600/80 text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center uppercase"
+                              >
+                                Quitar
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1 font-sans">
                       <label className="font-black text-neutral-700 block">Descripción breve</label>
                       <textarea
                         value={pDescription}
@@ -863,7 +1192,7 @@ export default function AdminConsole({
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1 font-sans">
                       <label className="font-black text-neutral-700 block">Atractivos Principales (Línea por línea)</label>
                       <textarea
                         value={pHighlightsText}
@@ -874,7 +1203,7 @@ export default function AdminConsole({
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 font-sans">
                       <div className="space-y-1">
                         <label className="font-black text-neutral-700 block">¿Qué Incluye el Tour?</label>
                         <textarea
@@ -894,6 +1223,197 @@ export default function AdminConsole({
                           placeholder="Artículos personales&#10;Souvenirs de alfarería"
                           className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:ring-1 focus:ring-brand-pink resize-none font-mono text-[10px]"
                         />
+                      </div>
+                    </div>
+
+                    {/* PDF Brochure Upload & Google Maps Customizer Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans border-t border-b border-neutral-100 py-3 my-2 bg-neutral-50/55 p-3 rounded-2xl">
+                      <div className="space-y-1">
+                        <label className="font-black text-neutral-700 block text-xs">Brochure Informativo (Ficha Técnica PDF)</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={pBrochurePdfUrl}
+                            onChange={(e) => setPBrochurePdfUrl(e.target.value)}
+                            placeholder="Folleto PDF (Enlace o cargado)..."
+                            className="flex-1 px-3 py-1.5 border border-neutral-200 rounded-xl focus:ring-1 focus:ring-brand-pink outline-none text-[10px]"
+                          />
+                          <label className="bg-neutral-850 hover:bg-black text-white text-[9px] font-bold px-2.5 py-1.5 rounded-xl cursor-pointer transition-all shrink-0 flex items-center justify-center gap-1 active:scale-95">
+                            <span>📄 Cargar PC</span>
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 8 * 1024 * 1024) {
+                                    alert("El PDF es demasiado pesado. Intenta con un archivo comprimido de menos de 8MB.");
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    if (typeof reader.result === 'string') {
+                                      setPBrochurePdfUrl(reader.result);
+                                      showSuccessToast("¡Folleto original PDF cargado!");
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 font-sans">
+                        <label className="font-black text-neutral-700 block text-xs">Ubicación Google Map o Embed Link</label>
+                        <input
+                          type="text"
+                          value={pGoogleMapEmbedUrl}
+                          onChange={(e) => setPGoogleMapEmbedUrl(e.target.value)}
+                          placeholder="Fijar coordenadas o Embed Iframe URL de Google Maps..."
+                          className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:ring-1 focus:ring-brand-pink outline-none text-[10px]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Interactive Detailed Day-by-Day Itinerary Editor */}
+                    <div className="space-y-3 bg-neutral-50/75 p-4 rounded-2xl border border-neutral-200 font-sans">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-black text-neutral-700 block text-xs uppercase tracking-wider">🗓️ Itinerario Diario Detallado por Días</label>
+                          <span className="text-[9px] text-[#2c2c2c]/50 block">Edita el cronograma diario y describe la experiencia para el cliente.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextDay = pItineraryDays.length + 1;
+                            setPItineraryDays([
+                              ...pItineraryDays,
+                              { day: nextDay, title: `Día ${nextDay}: `, description: "" }
+                            ]);
+                          }}
+                          className="bg-brand-pink text-white hover:bg-brand-orange text-[9px] font-extrabold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                        >
+                          <span>➕ Agregar Día</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                        {pItineraryDays.map((item, index) => (
+                          <div key={index} className="bg-white p-3 rounded-xl border border-neutral-100 shadow-sm space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="bg-brand-orange/15 text-brand-orange text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                Día {index + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (pItineraryDays.length <= 1) {
+                                    alert("El itinerario debe contemplar por lo menos un día.");
+                                    return;
+                                  }
+                                  const updated = pItineraryDays.filter((_, idx) => idx !== index);
+                                  setPItineraryDays(updated.map((d, i) => ({ ...d, day: i + 1 })));
+                                }}
+                                className="text-red-500 hover:text-red-700 text-[9px] font-bold cursor-pointer transition-colors"
+                              >
+                                🗑️ Quitar Día
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div className="sm:col-span-1">
+                                <span className="text-[8px] font-black text-neutral-400 block uppercase mb-0.5">Título del Día</span>
+                                <input
+                                  type="text"
+                                  value={item.title}
+                                  onChange={(e) => {
+                                    const updated = [...pItineraryDays];
+                                    updated[index].title = e.target.value;
+                                    setPItineraryDays(updated);
+                                  }}
+                                  placeholder={`Ej. Día ${index + 1}: Llegada`}
+                                  className="w-full px-2 py-1 border border-neutral-200 rounded-lg text-[10px] focus:ring-1 focus:ring-brand-pink outline-none"
+                                />
+                              </div>
+                              <div className="sm:col-span-2">
+                                <span className="text-[8px] font-black text-neutral-400 block uppercase mb-0.5">Actividad/Detalles del Día</span>
+                                <textarea
+                                  value={item.description}
+                                  onChange={(e) => {
+                                    const updated = [...pItineraryDays];
+                                    updated[index].description = e.target.value;
+                                    setPItineraryDays(updated);
+                                  }}
+                                  rows={1}
+                                  placeholder="Detalle de actividades, caminata, paisajes, comidas..."
+                                  className="w-full px-2 py-1 border border-neutral-200 rounded-lg text-[10px] focus:ring-1 focus:ring-brand-pink outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Foto de este Día */}
+                            <div className="pt-2 border-t border-dashed border-neutral-100 flex items-center gap-2 text-left">
+                              <div className="flex-1">
+                                <span className="text-[8px] font-black text-[#666] block uppercase mb-0.5">📸 Foto Relevante de este Día (Opcional)</span>
+                                <div className="flex gap-2 items-center">
+                                  <input
+                                    type="text"
+                                    value={item.dayImage || ""}
+                                    onChange={(e) => {
+                                      const updated = [...pItineraryDays];
+                                      updated[index].dayImage = e.target.value;
+                                      setPItineraryDays(updated);
+                                    }}
+                                    placeholder="https://images.unsplash.com/... o presiona 'Subir'"
+                                    className="flex-1 px-2 py-1 border border-neutral-200 rounded bg-neutral-50 text-[9px] font-mono"
+                                  />
+                                  <label className="bg-brand-orange hover:bg-brand-pink text-white text-[8px] font-extrabold px-2 py-1.5 rounded cursor-pointer transition-all uppercase tracking-wider shrink-0">
+                                    <span>Subir</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => {
+                                            if (typeof reader.result === 'string') {
+                                              const updated = [...pItineraryDays];
+                                              updated[index].dayImage = reader.result;
+                                              setPItineraryDays(updated);
+                                              showSuccessToast(`¡Foto cargada para el Día ${index + 1}!`);
+                                            }
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                  {item.dayImage && (
+                                    <div className="relative w-7 h-7 rounded border border-neutral-200 bg-neutral-50 overflow-hidden shrink-0 group">
+                                      <img src={item.dayImage} className="w-full h-full object-cover" />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = [...pItineraryDays];
+                                          updated[index].dayImage = "";
+                                          setPItineraryDays(updated);
+                                        }}
+                                        className="absolute inset-0 bg-black/70 text-white font-bold text-[7px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        X
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -929,7 +1449,7 @@ export default function AdminConsole({
           {/* ==================================================================== */}
           {/* TAB 2: BLOG & ARTICLE MANAGER */}
           {/* ==================================================================== */}
-          {activeTab === "blog" && (
+          {(activeTab === "noticias" || (activeTab === "paginas" && paginasSubTab === "blog")) && (
             <div className="flex-1 flex overflow-hidden w-full">
               {/* Left Column Blogs List */}
               <div className="w-full md:w-5/12 border-r border-[#eaeaea] flex flex-col bg-[#faf9f8] overflow-hidden">
@@ -1158,14 +1678,37 @@ export default function AdminConsole({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="font-black text-neutral-700">URL de Imagen Decorativa</label>
-                      <input
-                        type="text"
-                        value={bImage}
-                        onChange={(e) => setBImage(e.target.value)}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full px-3 py-2 border border-neutral-200 rounded-xl"
-                      />
+                      <label className="font-black text-neutral-700">URL de Imagen Decorativa o de PC</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={bImage}
+                          onChange={(e) => setBImage(e.target.value)}
+                          placeholder="https://images.unsplash.com/..."
+                          className="flex-1 px-3 py-2 border border-neutral-200 rounded-xl outline-none text-xs"
+                        />
+                        <label className="bg-[#f58220] hover:bg-[#d46a10] text-white text-[10px] font-bold px-3 py-2 rounded-xl cursor-pointer transition-all shrink-0 flex items-center justify-center gap-1 active:scale-95">
+                          <span>📷 Cargar PC</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  if (typeof reader.result === 'string') {
+                                    setBImage(reader.result);
+                                    showSuccessToast("¡Imagen de blog cargada con éxito!");
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
                     </div>
 
                     <div className="flex justify-end gap-2 p-1">
@@ -1185,25 +1728,732 @@ export default function AdminConsole({
           {/* ==================================================================== */}
           {/* TAB 3: STATIC CMS CONTENT BLOCKS */}
           {/* ==================================================================== */}
-          {activeTab === "cms" && (
-            <form onSubmit={handleSaveCMS} className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-white text-xs">
-              <div className="border-b border-neutral-100 pb-3 flex items-center justify-between">
+          {((activeTab === "paginas" && (paginasSubTab === "inicio" || paginasSubTab === "nosotros" || paginasSubTab === "custom")) || (activeTab === "contactos" && paginasSubTab === "contacto") || (activeTab === "reservaciones" && paginasSubTab === "reservar")) && (
+            <form onSubmit={handleSaveCMS} className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-white text-xs text-left">
+              <div className="border-b border-neutral-100 pb-3 flex items-center justify-between shrink-0">
                 <div>
-                  <h3 className="font-display font-extrabold text-brand-charcoal text-base">CMS: Modificador Global de Contenidos</h3>
-                  <p className="text-[10px] text-neutral-500 mt-0.5">Edita de forma libre las secciones de la página de inicio (Nosotros, Contacto y Banner) en Español e Inglés.</p>
+                  <h3 className="font-display font-extrabold text-brand-charcoal text-base">
+                    {paginasSubTab === "inicio" ? "Página de Inicio" :
+                     paginasSubTab === "nosotros" ? "Filosofía, Cultura & Nosotros" :
+                     paginasSubTab === "contacto" ? "Información de Contacto y Mapas" :
+                     paginasSubTab === "reservar" ? "Ajustes de Reservas y Formularios" :
+                     paginasSubTab === "custom" ? "Crear y Editar Páginas Propias" : "Editor General"}
+                  </h3>
+                  <p className="text-[10px] text-neutral-500 mt-0.5 animate-pulse">
+                    {paginasSubTab === "inicio" ? "Edita las diapositivas deslizantes principales, los sellos de confianza y las marcas de certificación." :
+                     paginasSubTab === "nosotros" ? "Escribe la misión, visión, lemas, propuesta de valor y reseñas biográficas del staff oficial." :
+                     paginasSubTab === "contacto" ? "Ingresa hasta 3 teléfonos, 3 correos, horarios, redes sociales y links de localización." :
+                     paginasSubTab === "reservar" ? "Gestiona el libro de reclamaciones, políticas de cookies y la dirección receptora del CRM de reservas." :
+                     paginasSubTab === "custom" ? "Añade páginas dinámicas personalizadas redactadas con lenguaje enriquecido Markdown." : "Edita los contenidos estáticos."}
+                  </p>
                 </div>
                 <button
                   type="submit"
-                  className="bg-brand-pink text-white hover:bg-brand-pink/90 px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  className="bg-brand-pink hover:bg-brand-orange text-white px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
                 >
-                  <Save className="w-4 h-4" /> Guardar Contenidos de la Web
+                  <Save className="w-4 h-4" /> Guardar Contenidos de la Página
                 </button>
               </div>
 
-              {/* Grid sections edits */}
+               {/* Grid sections edits */}
               <div className="space-y-5">
                 
+                {/* SECTION 0: HERO CAROUSEL SLIDES */}
+                {paginasSubTab === "inicio" && (
+                <div className="p-5 rounded-2xl border border-brand-pink/15 bg-white space-y-4">
+                  <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-brand-pink" />
+                      <h4 className="font-display font-extrabold text-xs uppercase text-brand-charcoal">Control de Carrusel de Portada (Diapositivas de Inicio)</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newSlide = {
+                          id: `slide-${Date.now()}`,
+                          titleEs: "Nuevo Destino Hermoso",
+                          titleEn: "Beautiful New Destination",
+                          descEs: "Descripción fantástica del nuevo destino en Ayacucho.",
+                          descEn: "Amazing description of the new destination in Ayacucho.",
+                          image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1200&auto=format&fit=crop&q=80",
+                          locationEs: "Ayacucho, Perú",
+                          locationEn: "Ayacucho, Peru",
+                          tagEs: "NUEVA RUTA",
+                          tagEn: "NEW ROUTE"
+                        };
+                        const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || []), newSlide];
+                        setCmsForm({ ...cmsForm, heroSlides: updated });
+                        showSuccessToast("¡Diapositiva agregada al carrusel!");
+                      }}
+                      className="bg-brand-orange hover:bg-brand-pink text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      + Añadir Diapositiva
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-neutral-500 italic">Administra de forma completa el fondo, textos, etiquetas y locaciones de la animación del encabezado de inicio de la web.</p>
+
+                  <div className="space-y-4">
+                    {(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || []).map((slide, index) => (
+                      <div key={slide.id || index} className="p-4 bg-neutral-50 rounded-2xl border border-neutral-150 relative space-y-3 text-xs text-left">
+                        <div className="flex items-center justify-between border-b border-dashed border-neutral-200 pb-2">
+                          <span className="text-[10px] font-black text-brand-pink uppercase tracking-wider">
+                            Diapositiva {index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || []).filter((_, i) => i !== index);
+                              setCmsForm({ ...cmsForm, heroSlides: updated });
+                              showSuccessToast("¡Diapositiva removida!");
+                            }}
+                            className="text-[10px] text-red-500 hover:text-red-700 font-bold uppercase cursor-pointer"
+                          >
+                            Eliminar Diapositiva x
+                          </button>
+                        </div>
+
+                        {/* Slide custom uploader and inputs */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Título (ES) *</label>
+                              <input
+                                type="text"
+                                value={slide.titleEs}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                  updated[index] = { ...updated[index], titleEs: e.target.value };
+                                  setCmsForm({ ...cmsForm, heroSlides: updated });
+                                }}
+                                className="w-full px-2.5 py-1 border border-neutral-200 bg-white rounded-lg font-bold text-neutral-800"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Title (EN)</label>
+                              <input
+                                type="text"
+                                value={slide.titleEn}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                  updated[index] = { ...updated[index], titleEn: e.target.value };
+                                  setCmsForm({ ...cmsForm, heroSlides: updated });
+                                }}
+                                className="w-full px-2.5 py-1 border border-neutral-200 bg-white rounded-lg font-bold text-neutral-800"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] font-bold text-neutral-500 block uppercase">Etiqueta (ES)</label>
+                                <input
+                                  type="text"
+                                  value={slide.tagEs}
+                                  onChange={(e) => {
+                                    const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                    updated[index] = { ...updated[index], tagEs: e.target.value };
+                                    setCmsForm({ ...cmsForm, heroSlides: updated });
+                                  }}
+                                  className="w-full px-2 py-0.5 border border-neutral-200 bg-white rounded-md text-[10px]"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-neutral-500 block uppercase">Tag (EN)</label>
+                                <input
+                                  type="text"
+                                  value={slide.tagEn}
+                                  onChange={(e) => {
+                                    const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                    updated[index] = { ...updated[index], tagEn: e.target.value };
+                                    setCmsForm({ ...cmsForm, heroSlides: updated });
+                                  }}
+                                  className="w-full px-2 py-0.5 border border-neutral-200 bg-white rounded-md text-[10px]"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Detalle / Descrip. (ES) *</label>
+                              <textarea
+                                value={slide.descEs}
+                                rows={2}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                  updated[index] = { ...updated[index], descEs: e.target.value };
+                                  setCmsForm({ ...cmsForm, heroSlides: updated });
+                                }}
+                                className="w-full px-2.5 py-1 border border-neutral-200 bg-white rounded-lg text-neutral-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Detail / Description (EN)</label>
+                              <textarea
+                                value={slide.descEn}
+                                rows={2}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                  updated[index] = { ...updated[index], descEn: e.target.value };
+                                  setCmsForm({ ...cmsForm, heroSlides: updated });
+                                }}
+                                className="w-full px-2.5 py-1 border border-neutral-200 bg-white rounded-lg text-neutral-700"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Locación (ES)</label>
+                              <input
+                                type="text"
+                                value={slide.locationEs}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                  updated[index] = { ...updated[index], locationEs: e.target.value };
+                                  setCmsForm({ ...cmsForm, heroSlides: updated });
+                                }}
+                                className="w-full px-2 py-0.5 border border-neutral-200 bg-white rounded-md text-[10px]"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Location (EN)</label>
+                              <input
+                                type="text"
+                                value={slide.locationEn}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                  updated[index] = { ...updated[index], locationEn: e.target.value };
+                                  setCmsForm({ ...cmsForm, heroSlides: updated });
+                                }}
+                                className="w-full px-2 py-0.5 border border-neutral-200 bg-white rounded-md text-[10px]"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[9px] font-bold text-neutral-500 block uppercase">Imagen de Fondo (Fondo de Diapositiva)</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={slide.image}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                  updated[index] = { ...updated[index], image: e.target.value };
+                                  setCmsForm({ ...cmsForm, heroSlides: updated });
+                                }}
+                                className="flex-1 px-2 py-1 border border-neutral-200 bg-white rounded-lg text-[9px] font-mono outline-none"
+                                placeholder="http://..."
+                              />
+                              <label className="bg-brand-pink hover:bg-brand-orange text-white text-[9px] font-extrabold px-2.5 py-1 rounded-lg cursor-pointer transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1">
+                                <span>📁 Subir PC</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        if (typeof reader.result === 'string') {
+                                          const updated = [...(cmsForm.heroSlides || DEFAULT_CMS_CONTENT.heroSlides || [])];
+                                          updated[index] = { ...updated[index], image: reader.result };
+                                          setCmsForm({ ...cmsForm, heroSlides: updated });
+                                          showSuccessToast(`¡Fondo de diapositiva N° ${index + 1} cargado!`);
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                )}
+
+                {/* SECTION A & B: MENUS PRINCIPALES, PÁGINAS DINÁMICAS Y HORARIOS DE ATENCIÓN */}
+                {(activeTab === "menus" || paginasSubTab === "custom") && (
+                <div className="p-5 rounded-2xl border border-brand-pink/15 bg-white space-y-4">
+                  <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-brand-pink" />
+                      <h4 className="font-display font-extrabold text-xs uppercase text-brand-charcoal">Configuración de Menú Principal y Páginas Personalizadas</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newId = `custom_${Date.now()}`;
+                        const newItem: any = {
+                          id: `menu_${Date.now()}`,
+                          labelEs: "Nueva Página",
+                          labelEn: "New Page",
+                          type: "custom_page",
+                          target: newId,
+                          customTitleEs: "Nueva Sección de Turismo de Sisari",
+                          customTitleEn: "New Sisari Expeditions Section",
+                          customContentEs: "### Bienvenidos a nuestra nueva página personalizada\nAquí puedes escribir párrafos descriptivos en **Markdown**, añadir listas e imágenes alusivas.",
+                          customContentEn: "### Welcome to our new custom page\nHere you can write descriptive paragraphs using **Markdown** formatting, lists, and links.",
+                          customImage: "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=1200&auto=format&fit=crop&q=80"
+                        };
+                        const updated = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || []), newItem];
+                        setCmsForm({ ...cmsForm, menuItems: updated });
+                        showSuccessToast("¡Elemento de menú añadido con éxito!");
+                      }}
+                      className="bg-brand-pink hover:bg-brand-orange text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      + Añadir Nueva Página / Link de Menú
+                    </button>
+                  </div>
+                  
+                  <p className="text-[10px] text-neutral-500 italic">
+                    Administra el menú principal de la cabecera. Puedes reordenar (prioridad de izquierda a derecha), añadir links internos de sección, o declarar páginas con contenido propio.
+                  </p>
+
+                  <div className="space-y-4 pt-2">
+                    {(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || []).map((item, index) => {
+                      const isSystemMenu = ["menu_1", "menu_2", "menu_3", "menu_4", "menu_5"].includes(item.id);
+                      
+                      return (
+                        <div key={item.id || index} className="p-4 bg-neutral-50 rounded-xl border border-neutral-150 space-y-3 text-xs text-left relative">
+                          <div className="flex items-center justify-between border-b border-dashed border-neutral-200 pb-2">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block font-mono">
+                              Opción #{index + 1}: {item.labelEs} ({item.type === "section" ? "Sección" : "Página Propia"})
+                            </span>
+                            
+                            <div className="flex items-center gap-2">
+                              {/* Reorder Up */}
+                              <button
+                                type="button"
+                                disabled={index === 0}
+                                onClick={() => {
+                                  const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                  const temp = items[index];
+                                  items[index] = items[index - 1];
+                                  items[index - 1] = temp;
+                                  setCmsForm({ ...cmsForm, menuItems: items });
+                                  showSuccessToast("Orden del menú actualizado.");
+                                }}
+                                className="px-2 py-0.5 bg-neutral-200 text-neutral-700 hover:bg-neutral-300 font-bold rounded text-[10px] disabled:opacity-30 cursor-pointer"
+                              >
+                                ↑ subirá
+                              </button>
+                              
+                              {/* Reorder Down */}
+                              <button
+                                type="button"
+                                disabled={index === (cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || []).length - 1}
+                                onClick={() => {
+                                  const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                  const temp = items[index];
+                                  items[index] = items[index + 1];
+                                  items[index + 1] = temp;
+                                  setCmsForm({ ...cmsForm, menuItems: items });
+                                  showSuccessToast("Orden del menú actualizado.");
+                                }}
+                                className="px-2 py-0.5 bg-neutral-200 text-neutral-700 hover:bg-neutral-300 font-bold rounded text-[10px] disabled:opacity-30 cursor-pointer"
+                              >
+                                ↓ bajará
+                              </button>
+
+                              {!isSystemMenu && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`¿Seguro que deseas eliminar la página/menú "${item.labelEs}"?`)) {
+                                      const filtered = (cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || []).filter(m => m.id !== item.id);
+                                      setCmsForm({ ...cmsForm, menuItems: filtered });
+                                      showSuccessToast("Elemento removido.");
+                                    }
+                                  }}
+                                  className="text-[10px] text-red-500 hover:text-red-700 font-bold uppercase cursor-pointer pl-1.5"
+                                >
+                                  Eliminar x
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Etiqueta Menú (ES) *</label>
+                              <input
+                                type="text"
+                                value={item.labelEs}
+                                required
+                                onChange={(e) => {
+                                  const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                  items[index] = { ...items[index], labelEs: e.target.value };
+                                  setCmsForm({ ...cmsForm, menuItems: items });
+                                }}
+                                className="w-full px-2.5 py-1.5 border border-neutral-250 bg-white rounded-lg text-neutral-800 text-xs font-semibold focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Menu Label (EN) *</label>
+                              <input
+                                type="text"
+                                value={item.labelEn}
+                                required
+                                onChange={(e) => {
+                                  const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                  items[index] = { ...items[index], labelEn: e.target.value };
+                                  setCmsForm({ ...cmsForm, menuItems: items });
+                                }}
+                                className="w-full px-2.5 py-1.5 border border-neutral-250 bg-white rounded-lg text-neutral-800 text-xs font-semibold focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold text-neutral-500 block uppercase">Tipo de Destino *</label>
+                              <select
+                                value={item.type}
+                                onChange={(e) => {
+                                  const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                  items[index] = { ...items[index], type: e.target.value as any };
+                                  setCmsForm({ ...cmsForm, menuItems: items });
+                                }}
+                                className="w-full px-2.5 py-1.5 border border-neutral-250 bg-white rounded-lg text-neutral-800 text-xs font-semibold focus:outline-none"
+                              >
+                                <option value="section">Ancla / Ir a Sección de Inicio</option>
+                                <option value="custom_page">Página Propia (Contenido Independiente)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="pt-1">
+                            {item.type === "section" ? (
+                              <div>
+                                <label className="text-[9px] font-bold text-neutral-400 block uppercase">Identificador de Sección (Anclaje)</label>
+                                <select
+                                  value={item.target}
+                                  onChange={(e) => {
+                                    const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                    items[index] = { ...items[index], target: e.target.value };
+                                    setCmsForm({ ...cmsForm, menuItems: items });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 border border-neutral-200 bg-white rounded-lg font-mono text-xs focus:outline-none"
+                                >
+                                  <option value="inicio">inicio (Banner Principal)</option>
+                                  <option value="nosotros">nosotros (Presentación / Quienes Somos)</option>
+                                  <option value="paquetes">paquetes (Catálogo de Experiencias)</option>
+                                  <option value="blog">blog (Artículos y Noticias)</option>
+                                  <option value="contacto">contacto (Formulario y Mapa)</option>
+                                </select>
+                              </div>
+                            ) : (
+                              <div className="space-y-3 p-3 bg-neutral-100/60 rounded-xl border border-neutral-200">
+                                <span className="text-[10px] font-black text-brand-orange uppercase block">Parámetros de la Página Personalizada</span>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[9px] font-bold text-neutral-500 block">Ruta / Identificador Amigable (Slug) *</label>
+                                    <input
+                                      type="text"
+                                      value={item.target}
+                                      required
+                                      disabled={isSystemMenu}
+                                      onChange={(e) => {
+                                        const cleanSlug = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+                                        const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                        items[index] = { ...items[index], target: cleanSlug };
+                                        setCmsForm({ ...cmsForm, menuItems: items });
+                                      }}
+                                      className="w-full px-2 py-1.5 border border-neutral-250 bg-white rounded-md text-neutral-800 font-mono text-xs disabled:opacity-50"
+                                      placeholder="ej. trekking_pampa"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] font-bold text-neutral-500 block">Imagen de Portada URL</label>
+                                    <input
+                                      type="text"
+                                      value={item.customImage || ""}
+                                      onChange={(e) => {
+                                        const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                        items[index] = { ...items[index], customImage: e.target.value };
+                                        setCmsForm({ ...cmsForm, menuItems: items });
+                                      }}
+                                      className="w-full px-2 py-1.5 border border-neutral-250 bg-white rounded-md text-neutral-800 text-xs"
+                                      placeholder="https://images.unsplash.com/photo-..."
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[9px] font-bold text-neutral-500 block">Título de la Página (ES) *</label>
+                                    <input
+                                      type="text"
+                                      value={item.customTitleEs || ""}
+                                      required
+                                      onChange={(e) => {
+                                        const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                        items[index] = { ...items[index], customTitleEs: e.target.value };
+                                        setCmsForm({ ...cmsForm, menuItems: items });
+                                      }}
+                                      className="w-full px-2 py-1.5 border border-neutral-250 bg-white rounded-md text-neutral-800 text-xs font-semibold"
+                                      placeholder="Título en Español"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] font-bold text-neutral-500 block">Page Main Heading (EN) *</label>
+                                    <input
+                                      type="text"
+                                      value={item.customTitleEn || ""}
+                                      required
+                                      onChange={(e) => {
+                                        const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                        items[index] = { ...items[index], customTitleEn: e.target.value };
+                                        setCmsForm({ ...cmsForm, menuItems: items });
+                                      }}
+                                      className="w-full px-2 py-1.5 border border-neutral-250 bg-white rounded-md text-neutral-800 text-xs font-semibold"
+                                      placeholder="Title in English"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[9px] font-bold text-neutral-500 block">Contenido Educativo / Informativo (ES - Soporta Markdown) *</label>
+                                    <textarea
+                                      rows={6}
+                                      value={item.customContentEs || ""}
+                                      required
+                                      onChange={(e) => {
+                                        const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                        items[index] = { ...items[index], customContentEs: e.target.value };
+                                        setCmsForm({ ...cmsForm, menuItems: items });
+                                      }}
+                                      className="w-full p-2 border border-neutral-250 bg-white rounded-md font-sans text-xs"
+                                      placeholder="### Escribe tu contenido..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] font-bold text-neutral-500 block">Independent Page Content (EN - Supports Markdown) *</label>
+                                    <textarea
+                                      rows={6}
+                                      value={item.customContentEn || ""}
+                                      required
+                                      onChange={(e) => {
+                                        const items = [...(cmsForm.menuItems || DEFAULT_CMS_CONTENT.menuItems || [])];
+                                        items[index] = { ...items[index], customContentEn: e.target.value };
+                                        setCmsForm({ ...cmsForm, menuItems: items });
+                                      }}
+                                      className="w-full p-2 border border-neutral-250 bg-white rounded-md font-sans text-xs"
+                                      placeholder="### Write your English language layout..."
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* CONFIGURACIÓN DE MENÚ SECUNDARIO (CATÁLOGOS) */}
+                  <div className="border-t border-neutral-100 pt-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-brand-orange animate-pulse" />
+                        <h4 className="font-display font-extrabold text-xs uppercase text-brand-charcoal">Configuración de Menú Secundario (Dropdown de Catálogos)</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSecItem: any = {
+                            id: `sec_menu_${Date.now()}`,
+                            labelEs: "Nuevo Destino",
+                            labelEn: "New Destination",
+                            type: "section",
+                            target: "local"
+                          };
+                          const updated = [...(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || []), newSecItem];
+                          setCmsForm({ ...cmsForm, secondaryMenuItems: updated });
+                          showSuccessToast("¡Elemento de menú secundario añadido con éxito!");
+                        }}
+                        className="bg-brand-orange hover:bg-brand-pink text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        + Añadir Enlace Secundario
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-neutral-500 italic">
+                      Administra los enlaces del menú secundario o sub-catálogos (los cuales se despliegan dinámicamente en el dropdown "Paquetes" de la cabecera principal).
+                    </p>
+
+                    <div className="space-y-3 pt-1">
+                      {(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || []).map((secItem, index) => {
+                        return (
+                          <div key={secItem.id || index} className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-150 text-xs text-left">
+                            <div className="flex items-center justify-between border-b border-dashed border-neutral-200 pb-2 mb-2">
+                              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block font-mono">
+                                Sub-Opción #{index + 1}: {secItem.labelEs}
+                              </span>
+                              
+                              <div className="flex items-center gap-1.5">
+                                {/* Up */}
+                                <button
+                                  type="button"
+                                  disabled={index === 0}
+                                  onClick={() => {
+                                    const items = [...(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || [])];
+                                    const temp = items[index];
+                                    items[index] = items[index - 1];
+                                    items[index - 1] = temp;
+                                    setCmsForm({ ...cmsForm, secondaryMenuItems: items });
+                                    showSuccessToast("Orden del menú secundario actualizado.");
+                                  }}
+                                  className="px-1.5 py-0.5 bg-neutral-200 text-neutral-700 hover:bg-neutral-300 font-bold rounded text-[9px] disabled:opacity-30 cursor-pointer"
+                                >
+                                  ↑
+                                </button>
+                                
+                                {/* Down */}
+                                <button
+                                  type="button"
+                                  disabled={index === (cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || []).length - 1}
+                                  onClick={() => {
+                                    const items = [...(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || [])];
+                                    const temp = items[index];
+                                    items[index] = items[index + 1];
+                                    items[index + 1] = temp;
+                                    setCmsForm({ ...cmsForm, secondaryMenuItems: items });
+                                    showSuccessToast("Orden del menú secundario actualizado.");
+                                  }}
+                                  className="px-1.5 py-0.5 bg-neutral-200 text-neutral-700 hover:bg-neutral-300 font-bold rounded text-[9px] disabled:opacity-30 cursor-pointer"
+                                >
+                                  ↓
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`¿Deseas eliminar el enlace secundario "${secItem.labelEs}"?`)) {
+                                      const filtered = (cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || []).filter(m => m.id !== secItem.id);
+                                      setCmsForm({ ...cmsForm, secondaryMenuItems: filtered });
+                                      showSuccessToast("Enlace secundario removido.");
+                                    }
+                                  }}
+                                  className="text-[9px] text-red-500 hover:text-red-700 font-bold uppercase cursor-pointer pl-1.5"
+                                >
+                                  Eliminar x
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5">
+                              <div>
+                                <label className="text-[9px] font-bold text-neutral-400 block uppercase mb-0.5">Etiqueta (ES) *</label>
+                                <input
+                                  type="text"
+                                  value={secItem.labelEs}
+                                  onChange={(e) => {
+                                    const items = [...(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || [])];
+                                    items[index] = { ...items[index], labelEs: e.target.value };
+                                    setCmsForm({ ...cmsForm, secondaryMenuItems: items });
+                                  }}
+                                  className="w-full px-2 py-1 border border-neutral-200 bg-white rounded-md text-[11px]"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-neutral-400 block uppercase mb-0.5">Label (EN) *</label>
+                                <input
+                                  type="text"
+                                  value={secItem.labelEn}
+                                  onChange={(e) => {
+                                    const items = [...(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || [])];
+                                    items[index] = { ...items[index], labelEn: e.target.value };
+                                    setCmsForm({ ...cmsForm, secondaryMenuItems: items });
+                                  }}
+                                  className="w-full px-2 py-1 border border-neutral-200 bg-white rounded-md text-[11px]"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-neutral-400 block uppercase mb-0.5">Dirección Enlace *</label>
+                                <select
+                                  value={secItem.target}
+                                  onChange={(e) => {
+                                    const items = [...(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || [])];
+                                    items[index] = { ...items[index], target: e.target.value };
+                                    setCmsForm({ ...cmsForm, secondaryMenuItems: items });
+                                  }}
+                                  className="w-full px-2 py-1 border border-neutral-200 bg-white rounded-md text-[11px]"
+                                >
+                                  <option value="local">Local</option>
+                                  <option value="national">National</option>
+                                  <option value="international">International</option>
+                                  <option value="inicio">Inicio</option>
+                                  <option value="nosotros">Nosotros</option>
+                                  <option value="contacto">Contacto</option>
+                                  <option value="blog">Blog</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-neutral-400 block uppercase mb-0.5">Tipo Acción</label>
+                                <select
+                                  value={secItem.type}
+                                  onChange={(e) => {
+                                    const items = [...(cmsForm.secondaryMenuItems || DEFAULT_CMS_CONTENT.secondaryMenuItems || [])];
+                                    items[index] = { ...items[index], type: e.target.value as any };
+                                    setCmsForm({ ...cmsForm, secondaryMenuItems: items });
+                                  }}
+                                  className="w-full px-2 py-1 border border-neutral-200 bg-white rounded-md text-[11px]"
+                                >
+                                  <option value="section">Sección Scroll / Filtro</option>
+                                  <option value="custom_page">Página Propia</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* SUB SECTION: OFFICE OPENING HOURS */}
+                  <div className="border-t border-neutral-100 pt-4 space-y-3">
+                    <span className="text-[10px] font-black text-brand-orange uppercase block">Horario de Atención Georreferenciada</span>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] font-bold text-neutral-500 block uppercase">Horarios de Atención Física (ES) *</label>
+                        <input
+                          type="text"
+                          value={cmsForm.officeHoursEs || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, officeHoursEs: e.target.value })}
+                          className="w-full px-3 py-2 border border-neutral-250 bg-white rounded-lg text-neutral-800"
+                          placeholder="e.g. Lunes a Sábado: 8:00 AM - 8:30 PM | Domingos: 9:00 AM - 1:00 PM"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-neutral-500 block uppercase">Opening & Call Hours (EN) *</label>
+                        <input
+                          type="text"
+                          value={cmsForm.officeHoursEn || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, officeHoursEn: e.target.value })}
+                          className="w-full px-3 py-2 border border-neutral-250 bg-white rounded-lg text-neutral-800"
+                          placeholder="e.g. Monday to Saturday: 8:00 AM - 8:30 PM | Sundays: 9:00 AM - 1:00 PM"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+                )}
+
                 {/* SECTION 1: ABOUT US (NOSOTROS) */}
+                {paginasSubTab === "nosotros" && (
                 <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4">
                   <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
@@ -1275,9 +2525,210 @@ export default function AdminConsole({
                       </div>
                     </div>
                   </div>
+
+                  {/* Valiosos compromisos customizable cards */}
+                  <div className="border-t border-neutral-200/60 pt-4 mt-4 space-y-4">
+                    <span className="text-[11px] font-mono tracking-widest text-[#f05a28] uppercase font-bold block">
+                      Tres Compromisos de Servicio (Página Nosotros)
+                    </span>
+                    
+                    {/* Card 1 */}
+                    <div className="bg-white p-3.5 rounded-xl border border-neutral-150 space-y-3">
+                      <div className="font-bold text-[10px] uppercase text-neutral-400">Compromiso 1</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Título (ES)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.nosotrosValue1TitleEs || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue1TitleEs: e.target.value })}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg focus:ring-1 focus:ring-brand-pink"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Título (EN)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.nosotrosValue1TitleEn || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue1TitleEn: e.target.value })}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg focus:ring-1 focus:ring-brand-pink"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Descripción (ES)</label>
+                          <textarea
+                            value={cmsForm.nosotrosValue1DescEs || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue1DescEs: e.target.value })}
+                            rows={2}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg resize-none focus:ring-1"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Descripción (EN)</label>
+                          <textarea
+                            value={cmsForm.nosotrosValue1DescEn || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue1DescEn: e.target.value })}
+                            rows={2}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg resize-none focus:ring-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-neutral-500 block font-bold">Seleccionar Icono Monocromático</label>
+                        <div className="flex flex-wrap gap-1">
+                          {["Shield", "Clock", "Award", "Compass", "Target", "Users", "Star", "Eye"].map(opt => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setCmsForm({ ...cmsForm, nosotrosValue1Icon: opt })}
+                              className={`px-2 py-1 rounded-md border text-[9px] transition-all cursor-pointer ${
+                                (cmsForm.nosotrosValue1Icon || "Shield") === opt 
+                                  ? "bg-brand-charcoal text-white border-brand-charcoal font-bold" 
+                                  : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 2 */}
+                    <div className="bg-white p-3.5 rounded-xl border border-neutral-150 space-y-3">
+                      <div className="font-bold text-[10px] uppercase text-neutral-400">Compromiso 2</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Título (ES)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.nosotrosValue2TitleEs || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue2TitleEs: e.target.value })}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg focus:ring-1 focus:ring-brand-pink"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Título (EN)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.nosotrosValue2TitleEn || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue2TitleEn: e.target.value })}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg focus:ring-1 focus:ring-brand-pink"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Descripción (ES)</label>
+                          <textarea
+                            value={cmsForm.nosotrosValue2DescEs || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue2DescEs: e.target.value })}
+                            rows={2}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg resize-none focus:ring-1"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Descripción (EN)</label>
+                          <textarea
+                            value={cmsForm.nosotrosValue2DescEn || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue2DescEn: e.target.value })}
+                            rows={2}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg resize-none focus:ring-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-neutral-500 block font-bold">Seleccionar Icono Monocromático</label>
+                        <div className="flex flex-wrap gap-1">
+                          {["Shield", "Clock", "Award", "Compass", "Target", "Users", "Star", "Eye"].map(opt => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setCmsForm({ ...cmsForm, nosotrosValue2Icon: opt })}
+                              className={`px-2 py-1 rounded-md border text-[9px] transition-all cursor-pointer ${
+                                (cmsForm.nosotrosValue2Icon || "Clock") === opt 
+                                  ? "bg-brand-charcoal text-white border-brand-charcoal font-bold" 
+                                  : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 3 */}
+                    <div className="bg-white p-3.5 rounded-xl border border-neutral-150 space-y-3">
+                      <div className="font-bold text-[10px] uppercase text-neutral-400">Compromiso 3</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Título (ES)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.nosotrosValue3TitleEs || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue3TitleEs: e.target.value })}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg focus:ring-1 focus:ring-brand-pink"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Título (EN)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.nosotrosValue3TitleEn || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue3TitleEn: e.target.value })}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg focus:ring-1 focus:ring-brand-pink"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Descripción (ES)</label>
+                          <textarea
+                            value={cmsForm.nosotrosValue3DescEs || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue3DescEs: e.target.value })}
+                            rows={2}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg resize-none focus:ring-1"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-neutral-500 block">Descripción (EN)</label>
+                          <textarea
+                            value={cmsForm.nosotrosValue3DescEn || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, nosotrosValue3DescEn: e.target.value })}
+                            rows={2}
+                            className="w-full px-2.5 py-1 text-xs border border-neutral-200 bg-white rounded-lg resize-none focus:ring-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-neutral-500 block font-bold">Seleccionar Icono Monocromático</label>
+                        <div className="flex flex-wrap gap-1">
+                          {["Shield", "Clock", "Award", "Compass", "Target", "Users", "Star", "Eye"].map(opt => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setCmsForm({ ...cmsForm, nosotrosValue3Icon: opt })}
+                              className={`px-2 py-1 rounded-md border text-[9px] transition-all cursor-pointer ${
+                                (cmsForm.nosotrosValue3Icon || "Award") === opt 
+                                  ? "bg-brand-charcoal text-white border-brand-charcoal font-bold" 
+                                  : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                )}
 
                 {/* SECTION 2: CONTACT & SERVICE (CONTACTO) */}
+                {paginasSubTab === "contacto" && (
                 <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4">
                   <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#e12d8a]" />
@@ -1332,8 +2783,10 @@ export default function AdminConsole({
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* SECTION 3: CORPORATE CONTACTS & SOCIAL LINKS */}
+                {paginasSubTab === "contacto" && (
                 <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4 text-left">
                   <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#f58220]" />
@@ -1483,7 +2936,19 @@ export default function AdminConsole({
                             />
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[9px] text-neutral-500 block font-bold">TikTok</label>
+                            <input
+                              type="text"
+                              value={cmsForm.socialLinks?.tiktok || ""}
+                              onChange={(e) => setCmsForm({
+                                ...cmsForm,
+                                socialLinks: { ...(cmsForm.socialLinks || DEFAULT_CMS_CONTENT.socialLinks), tiktok: e.target.value }
+                              })}
+                              className="w-full px-2 py-1 border border-neutral-200 rounded-lg text-[10px]"
+                            />
+                          </div>
                           <div>
                             <label className="text-[9px] text-neutral-500 block font-bold">LinkedIn</label>
                             <input
@@ -1493,7 +2958,7 @@ export default function AdminConsole({
                                 ...cmsForm,
                                 socialLinks: { ...(cmsForm.socialLinks || DEFAULT_CMS_CONTENT.socialLinks), linkedin: e.target.value }
                               })}
-                              className="w-full px-2.5 py-1 border border-neutral-200 rounded-lg text-[11px]"
+                              className="w-full px-2 py-1 border border-neutral-200 rounded-lg text-[10px]"
                             />
                           </div>
                           <div>
@@ -1505,7 +2970,7 @@ export default function AdminConsole({
                                 ...cmsForm,
                                 socialLinks: { ...(cmsForm.socialLinks || DEFAULT_CMS_CONTENT.socialLinks), youtube: e.target.value }
                               })}
-                              className="w-full px-2.5 py-1 border border-neutral-200 rounded-lg text-[11px]"
+                              className="w-full px-2 py-1 border border-neutral-200 rounded-lg text-[10px]"
                             />
                           </div>
                         </div>
@@ -1539,10 +3004,236 @@ export default function AdminConsole({
                         </div>
                       </div>
                     </div>
+
+                    {/* Physical Address */}
+                    <div className="space-y-2.5 p-4 bg-white border border-neutral-150 rounded-2xl md:col-span-2">
+                      <span className="text-[10px] uppercase font-black text-brand-pink block">📍 Dirección Física (Menú Superior & Mapa)</span>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-[#444] block">Dirección en Español</label>
+                          <input
+                            type="text"
+                            value={cmsForm.addressEs || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, addressEs: e.target.value })}
+                            placeholder="Ej. Jirón Lima 140, 1ra Cuadra"
+                            className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-[#444] block">Dirección en Inglés (English)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.addressEn || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, addressEn: e.target.value })}
+                            placeholder="Ej. 140 Jiron Lima, 1st Block"
+                            className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-[#444] block">Enlace Google Maps (URL)</label>
+                          <input
+                            type="text"
+                            value={cmsForm.addressMapUrl || ""}
+                            onChange={(e) => setCmsForm({ ...cmsForm, addressMapUrl: e.target.value })}
+                            placeholder="https://maps.google.com/?q=..."
+                            className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-[10px] font-mono text-brand-charcoal"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+                )}
 
-                {/* SECTION 4: CERTIFICATIONS EDIT PANEL (8 SPOTS) */}
+                {/* CONFIGURACIÓN DE IMÁGENES DE LOGOTIPO */}
+                {activeTab === "menus" && (
+                <div className="p-5 rounded-2xl border border-brand-pink/15 bg-white space-y-4 text-left">
+                  <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand-pink animate-pulse" />
+                    <h4 className="font-display font-extrabold text-xs uppercase text-brand-charcoal">Identidad Corporativa: Logotipo en Imagen</h4>
+                  </div>
+                  <p className="text-[10px] text-neutral-500 italic">
+                    Configura la imagen del logo institucional para el Menú Principal (cabecera) y para el Footer (pie de página). Si se dejan en blanco, el sistema mostrará por defecto el logotipo vectorial en flor de Sisari Travel.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Header Logo */}
+                    <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-150 space-y-3 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-black text-brand-pink block">Logo del Menú Principal (Cabecera)</span>
+                        <p className="text-[9px] text-neutral-500 mb-1.5">Sube o ingresa la URL de la imagen del logotipo corporativo para la barra de navegación.</p>
+                        <input
+                          type="text"
+                          value={cmsForm.logoImage || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, logoImage: e.target.value })}
+                          className="w-full px-2.5 py-1.5 border border-neutral-250 bg-white rounded-lg text-[10px] font-mono outline-none mb-2"
+                          placeholder="http://..."
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between gap-2.5 pt-2">
+                        <label className="bg-brand-pink hover:bg-brand-orange text-white text-[9px] font-black px-3 py-1.5 rounded-lg cursor-pointer transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1 uppercase tracking-wider">
+                          <span>📁 Subir de la PC</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  if (typeof reader.result === 'string') {
+                                    setCmsForm({ ...cmsForm, logoImage: reader.result });
+                                    showSuccessToast("¡Logo principal cargado correctamente!");
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        {cmsForm.logoImage && (
+                          <button
+                            type="button"
+                            onClick={() => setCmsForm({ ...cmsForm, logoImage: "" })}
+                            className="text-[9px] text-red-500 font-bold uppercase hover:underline"
+                          >
+                            Eliminar x
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer Logo */}
+                    <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-150 space-y-3 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-black text-brand-orange block">Logo del Pie de Página (Footer)</span>
+                        <p className="text-[9px] text-neutral-500 mb-1.5">Sube o ingresa la URL de la imagen del logotipo corporativo para el footer de la página.</p>
+                        <input
+                          type="text"
+                          value={cmsForm.logoFooterImage || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, logoFooterImage: e.target.value })}
+                          className="w-full px-2.5 py-1.5 border border-neutral-250 bg-white rounded-lg text-[10px] font-mono outline-none mb-2"
+                          placeholder="http://..."
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between gap-2.5 pt-2">
+                        <label className="bg-brand-orange hover:bg-brand-pink text-white text-[9px] font-black px-3 py-1.5 rounded-lg cursor-pointer transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1 uppercase tracking-wider">
+                          <span>📁 Subir de la PC</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  if (typeof reader.result === 'string') {
+                                    setCmsForm({ ...cmsForm, logoFooterImage: reader.result });
+                                    showSuccessToast("¡Logo de footer cargado correctamente!");
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        {cmsForm.logoFooterImage && (
+                          <button
+                            type="button"
+                            onClick={() => setCmsForm({ ...cmsForm, logoFooterImage: "" })}
+                            className="text-[9px] text-red-500 font-bold uppercase hover:underline"
+                          >
+                            Eliminar x
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                )}
+
+                {/* NEW SECTION 4: PORTAL DE FORMULARIOS Y EDICIÓN DE FOOTER */}
+                {(activeTab === "menus" || paginasSubTab === "reservar") && (
+                <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4 text-left">
+                  <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand-pink" />
+                    <h4 className="font-display font-extrabold text-xs uppercase text-brand-charcoal">Configuración: Pie de Página (Footer) y Formularios</h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* Destination Email Block */}
+                    <div className="p-4 bg-white border border-neutral-150 rounded-2xl space-y-3">
+                      <span className="text-[10px] uppercase font-black text-brand-orange block">✉ Correo de Destino de Formularios</span>
+                      <div>
+                        <label className="text-[10px] font-bold text-neutral-500 block">Correo que recepta las reservas, consultas y cotizaciones de la Web</label>
+                        <input
+                          type="email"
+                          value={cmsForm.destinationFormEmail || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, destinationFormEmail: e.target.value })}
+                          placeholder="e.g. retabloweb@gmail.com"
+                          className="w-full max-w-md px-3 py-1.5 border border-neutral-200 rounded-lg text-xs font-mono font-bold text-brand-charcoal focus:ring-1 focus:ring-brand-pink"
+                        />
+                        <p className="text-[9px] text-neutral-400 mt-1">Este correo redirige internamente todos los formularios de contacto y reservas del aplicativo de forma estructurada.</p>
+                      </div>
+                    </div>
+
+                    {/* Slogan & About translations layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-white border border-neutral-150 rounded-2xl space-y-2">
+                        <span className="text-[10px] uppercase font-black text-neutral-500 block">Slogan/Descripción del Footer (Español)</span>
+                        <textarea
+                          value={cmsForm.footerSloganEs || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, footerSloganEs: e.target.value })}
+                          rows={3}
+                          className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs"
+                          placeholder="Texto que indica el propósito de Sisari Travel en la parte inferior izquierda de la página"
+                        />
+                      </div>
+                      <div className="p-4 bg-white border border-neutral-150 rounded-2xl space-y-2">
+                        <span className="text-[10px] uppercase font-black text-neutral-400 block">Footer Slogan/About Description (English)</span>
+                        <textarea
+                          value={cmsForm.footerSloganEn || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, footerSloganEn: e.target.value })}
+                          rows={3}
+                          className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs"
+                          placeholder="Text explaining company history positioned at bottom left of the footer in English"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Copyright texts block */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-white border border-neutral-150 rounded-2xl space-y-2">
+                        <span className="text-[10px] uppercase font-black text-neutral-500 block">Texto de Derechos Reservados (Español)</span>
+                        <input
+                          type="text"
+                          value={cmsForm.footerCopyrightEs || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, footerCopyrightEs: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs"
+                          placeholder="e.g. Sisari Travel Perú. Todos los derechos reservados."
+                        />
+                      </div>
+                      <div className="p-4 bg-white border border-neutral-150 rounded-2xl space-y-2">
+                        <span className="text-[10px] uppercase font-black text-neutral-400 block">Copyright Rights String (English)</span>
+                        <input
+                          type="text"
+                          value={cmsForm.footerCopyrightEn || ""}
+                          onChange={(e) => setCmsForm({ ...cmsForm, footerCopyrightEn: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs"
+                          placeholder="e.g. Sisari Travel Peru. All rights reserved."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                )}
+
+                {/* SECTION 5: CERTIFICATIONS EDIT PANEL (8 SPOTS) */}
+                {paginasSubTab === "inicio" && (
                 <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4 text-left">
                   <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#e12d8a]" />
@@ -1568,17 +3259,43 @@ export default function AdminConsole({
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] text-neutral-500">Logo URL (Icono Cuadrado)</label>
-                          <input
-                            type="text"
-                            value={cert.logo}
-                            onChange={(e) => {
-                              const updated = [...(cmsForm.certifications || DEFAULT_CMS_CONTENT.certifications)];
-                              updated[index] = { ...updated[index], logo: e.target.value };
-                              setCmsForm({ ...cmsForm, certifications: updated });
-                            }}
-                            className="w-full px-2 py-0.5 border border-neutral-200 rounded text-[10px] font-mono"
-                          />
+                          <label className="text-[9px] text-neutral-500 block">Logo (URL o Cargar PC)</label>
+                          <div className="flex gap-1">
+                            <input
+                              type="text"
+                              value={cert.logo}
+                              onChange={(e) => {
+                                const updated = [...(cmsForm.certifications || DEFAULT_CMS_CONTENT.certifications)];
+                                updated[index] = { ...updated[index], logo: e.target.value };
+                                setCmsForm({ ...cmsForm, certifications: updated });
+                              }}
+                              className="flex-1 px-2 py-0.5 border border-neutral-200 rounded text-[9px] font-mono outline-none"
+                              placeholder="URL del logo..."
+                            />
+                            <label className="bg-brand-pink text-white hover:bg-brand-orange text-[9px] font-bold px-1.5 py-0.5 rounded cursor-pointer transition-colors active:scale-95 shrink-0 flex items-center justify-center gap-0.5">
+                              <span>📁</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      if (typeof reader.result === 'string') {
+                                        const updated = [...(cmsForm.certifications || DEFAULT_CMS_CONTENT.certifications)];
+                                        updated[index] = { ...updated[index], logo: reader.result };
+                                        setCmsForm({ ...cmsForm, certifications: updated });
+                                        showSuccessToast(`¡Logo de ${cert.name || "sello"} cargado!`);
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] text-neutral-500">Redirección / Redirección Web</label>
@@ -1597,8 +3314,10 @@ export default function AdminConsole({
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* SECTION 5: MISSION, VISION, & VALUE PROPOSITION */}
+                {paginasSubTab === "nosotros" && (
                 <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4 text-left">
                   <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
@@ -1701,8 +3420,10 @@ export default function AdminConsole({
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* SECTION 6: REPRESENTATIVE MEMBERS (4 BIOGRAPHIES) */}
+                {paginasSubTab === "nosotros" && (
                 <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4 text-left">
                   <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#f58220]" />
@@ -1729,17 +3450,43 @@ export default function AdminConsole({
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-neutral-500 block">Foto de Perfil (URL)</label>
-                            <input
-                              type="text"
-                              value={member.image}
-                              onChange={(e) => {
-                                const updated = [...(cmsForm.teamMembers || DEFAULT_CMS_CONTENT.teamMembers)];
-                                updated[index] = { ...updated[index], image: e.target.value };
-                                setCmsForm({ ...cmsForm, teamMembers: updated });
-                              }}
-                              className="w-full px-2.5 py-1 border border-neutral-200 rounded-lg text-[10px] font-mono"
-                            />
+                            <label className="text-[9px] text-neutral-500 block">Foto de Perfil (URL o Cargar)</label>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                value={member.image}
+                                onChange={(e) => {
+                                  const updated = [...(cmsForm.teamMembers || DEFAULT_CMS_CONTENT.teamMembers)];
+                                  updated[index] = { ...updated[index], image: e.target.value };
+                                  setCmsForm({ ...cmsForm, teamMembers: updated });
+                                }}
+                                className="flex-1 px-2.5 py-1 border border-neutral-200 rounded-lg text-[10px] font-mono outline-none"
+                                placeholder="http://..."
+                              />
+                              <label className="bg-brand-pink text-white hover:bg-[#d46a10] text-[9px] font-bold px-2 py-1.5 rounded-lg cursor-pointer transition-all shrink-0 flex items-center justify-center gap-1 active:scale-95">
+                                <span>📷 Subir</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        if (typeof reader.result === 'string') {
+                                          const updated = [...(cmsForm.teamMembers || DEFAULT_CMS_CONTENT.teamMembers)];
+                                          updated[index] = { ...updated[index], image: reader.result };
+                                          setCmsForm({ ...cmsForm, teamMembers: updated });
+                                          showSuccessToast(`¡Foto de ${member.name} cargada!`);
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
                           </div>
                         </div>
 
@@ -1804,8 +3551,10 @@ export default function AdminConsole({
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* SECTION 7: DETAILED AGREEMENTS & CONTRACTUAL TEXTS (PRIVACY, LEGISLATION, ETC) */}
+                {paginasSubTab === "reservar" && (
                 <div className="p-5 rounded-2xl border border-[#eaeaea] bg-neutral-50/40 space-y-4 text-left">
                   <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-brand-charcoal" />
@@ -1925,6 +3674,7 @@ export default function AdminConsole({
                     </div>
                   </div>
                 </div>
+                )}
 
               </div>
 
@@ -2138,6 +3888,25 @@ export default function AdminConsole({
                       </button>
                     ))}
                   </div>
+
+                  <div className="flex gap-2 pt-1 border-t border-neutral-100">
+                    <button
+                      type="button"
+                      onClick={handleExportCSV}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      title="Descargar base de datos filtrada en formato Excel / CSV"
+                    >
+                      <span>📥 Exportar Excel</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePrintCRM}
+                      className="flex-1 bg-brand-charcoal hover:bg-neutral-850 active:scale-95 text-white text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      title="Imprimir o descargar reporte PDF para archivo"
+                    >
+                      <span>🖨️ Imprimir Reporte</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Scroller Leads card */}
@@ -2294,13 +4063,176 @@ export default function AdminConsole({
             </div>
           )}
 
+          {(activeTab === "media" || activeTab === "multimedia") && (
+            <div className="flex-1 flex flex-col bg-white overflow-y-auto w-full p-6 space-y-6">
+              {/* Header Titles */}
+              <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
+                <div className="text-left">
+                  <h3 className="font-display font-black text-2xl text-brand-charcoal">📁 Gestor de Archivos y Cargas</h3>
+                  <p className="text-xs text-[#a0a0a0] font-light">Sube imágenes de excursiones y documentos PDF de itinerarios. Copia sus enlaces para usarlos en el catálogo o blog.</p>
+                </div>
+                
+                <span className="bg-amber-100 text-amber-800 text-[10px] uppercase font-bold font-mono px-3 py-1 rounded-full shrink-0">
+                  {mediaUploads.length} Archivos Almacenados
+                </span>
+              </div>
+
+              {/* Upload Drag/Drop Simulated Box */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 bg-neutral-50 border-2 border-dashed border-neutral-200 hover:border-brand-pink rounded-3xl p-6 text-center flex flex-col items-center justify-center gap-3 transition-colors group relative font-sans">
+                  <Upload className="w-10 h-10 text-neutral-400 group-hover:text-brand-pink transition-colors animate-bounce" style={{ animationDuration: "3s" }} />
+                  <div>
+                    <h4 className="font-bold text-neutral-800 text-xs">Cargar Nuevo Archivo (Imagen o PDF)</h4>
+                    <p className="text-[10px] text-neutral-500 font-light mt-1">Soporta PDFs, JPG, PNG y WEBP (Máx. 8MB)</p>
+                  </div>
+                  <label className="bg-brand-pink hover:bg-black text-white text-[11px] font-black px-4 py-2 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm block mt-2">
+                    Seleccionar Archivo
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 8 * 1024 * 1024) {
+                            alert("El archivo es superior al límite de 8MB.");
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            if (typeof reader.result === 'string') {
+                              const sizeInKb = Math.round(file.size / 1024);
+                              const sizeStr = sizeInKb > 1024 
+                                ? (sizeInKb / 1024).toFixed(1) + " MB" 
+                                : sizeInKb + " KB";
+                              
+                              const newUpload = {
+                                id: "up_" + Date.now(),
+                                name: file.name,
+                                type: file.type,
+                                size: sizeStr,
+                                content: reader.result,
+                                date: new Date().toISOString().substring(0, 10)
+                              };
+                              
+                              setMediaUploads([newUpload, ...mediaUploads]);
+                              showSuccessToast(`¡"${file.name}" cargado con éxito!`);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Instructions card */}
+                <div className="lg:col-span-2 bg-brand-pink/5 rounded-3xl p-6 flex flex-col justify-between text-left border border-brand-pink/15 font-sans">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-mono text-brand-pink font-bold uppercase tracking-wider block">💡 Cómo usar tus archivos cargados</span>
+                    <h4 className="font-bold text-brand-charcoal text-sm">Organiza tu contenido multimedia en 3 pasos:</h4>
+                    <ul className="space-y-1.5 text-xs text-brand-charcoal/80 font-light list-decimal pl-4 mt-2">
+                      <li>Haz clic en el botón de examinar e importa un PDF detallado de la ruta o bien fotos del destino local.</li>
+                      <li>Haz clic en el botón de <strong className="text-brand-pink font-bold">📋 Copiar Enlace</strong> en la ficha del archivo para copiar su código URI directamente.</li>
+                      <li>Pega el enlace copiado en el formulario del Paquete Turístico (ej: en el casillero de Brochure PDF o en la Imagen de Portada) o al crear artículos en el Blog. ¡Listo!</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-brand-pink/15 flex items-center justify-between text-[11px] text-[#2c2c2c]/70 font-mono">
+                    <span>Espacio estimado usado: {mediaUploads.length * 12} KB</span>
+                    <span className="text-brand-pink font-bold">Ayacucho Sisari Multi-Uploader v2</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Gallery Grid of Files */}
+              <div className="space-y-4 text-left font-sans">
+                <h4 className="font-display font-black text-sm text-[#2c2c2c] uppercase tracking-wider">📦 Listado de tus Archivos Cargados</h4>
+                
+                {mediaUploads.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {mediaUploads.map((file) => {
+                      const isImage = file.type.startsWith("image/");
+                      
+                      return (
+                        <div key={file.id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-xs hover:border-brand-pink hover:shadow-md transition-all flex flex-col justify-between h-56 group">
+                          {/* Top Thumbnail Section */}
+                          <div className="h-28 bg-neutral-100 flex items-center justify-center relative overflow-hidden shrink-0">
+                            {isImage ? (
+                              <img
+                                src={file.content}
+                                alt={file.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center justify-center gap-1.5 text-neutral-500">
+                                <FileText className="w-10 h-10 text-red-500 animate-pulse" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-red-600 bg-red-50 px-2 py-0.5 rounded">PDF DOCUMENTO</span>
+                              </div>
+                            )}
+
+                            {/* Format label overlay */}
+                            <span className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white font-mono text-[9px] px-2 py-0.5 rounded">
+                              {file.size}
+                            </span>
+                          </div>
+
+                          {/* Info and file actions */}
+                          <div className="p-3.5 flex-1 flex flex-col justify-between gap-2 bg-neutral-25/50">
+                            <div>
+                              <h5 className="font-extrabold text-[#2c2c2c] text-xs truncate" title={file.name}>
+                                {file.name}
+                              </h5>
+                              <p className="text-[10px] text-neutral-400 font-mono mt-0.5">Subido el {file.date}</p>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1 border-t border-neutral-100">
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(file.content);
+                                  showSuccessToast("¡Enlace copiado al portapapeles!");
+                                }}
+                                className="flex-1 bg-brand-pink/10 hover:bg-brand-pink text-brand-pink hover:text-white text-[10px] font-black py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1 cursor-pointer active:scale-95"
+                              >
+                                📋 Copiar Enlace
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`¿Estás seguro de eliminar "${file.name}"?`)) {
+                                    setMediaUploads(mediaUploads.filter((f) => f.id !== file.id));
+                                    showSuccessToast("Archivo eliminado perfectamente.");
+                                  }
+                                }}
+                                className="p-1.5 bg-neutral-100 hover:bg-red-50 text-neutral-500 hover:text-red-700 rounded-lg transition-all cursor-pointer"
+                                title="Eliminar archivo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-16 bg-neutral-50 rounded-3xl border border-neutral-100">
+                    <span className="text-3xl">📭</span>
+                    <h5 className="font-bold text-neutral-700 text-xs mt-2">No hay archivos cargados</h5>
+                    <p className="text-[10px] text-neutral-400">Prueba importando tus PDF de brochures o fotos de tours locales.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* ADMIN FOOTER BAR */}
         <div className="px-6 py-4.5 border-t border-[#eaeaea] bg-neutral-50 shrink-0 flex items-center justify-between flex-wrap gap-4 text-xs">
           <span className="text-neutral-500 font-mono">
-            {activeTab === "packages" ? `Paquetes totales en memoria: ${packages.length}` :
-             activeTab === "blog" ? `Artículos de Blog en memoria: ${blogPosts.length}` : 
+            {activeTab === "paquetes" ? `Paquetes totales en memoria: ${packages.length}` :
+             activeTab === "noticias" ? `Artículos de Blog en memoria: ${blogPosts.length}` : 
              activeTab === "crm" ? `Historiales registrados en CRM: ${crmLeads.length}` : "Hub de Administración de Sisari Travel"}
           </span>
           
